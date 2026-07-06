@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ExtensionSettings, Rule } from '~/types/rules'
+import type { ExtensionSettings, Rule, RuleGroup, RuleGroupMeta } from '~/types/rules'
 import { computed, onMounted, ref, shallowRef } from 'vue'
 import browser from 'webextension-polyfill'
 import AppBrand from '~/components/AppBrand.vue'
@@ -7,8 +7,8 @@ import BaseButton from '~/components/BaseButton.vue'
 import ModeBadge from '~/components/ModeBadge.vue'
 import ThemeToggle from '~/components/ThemeToggle.vue'
 import ToggleSwitch from '~/components/ToggleSwitch.vue'
-import { builtinRuleGroups, builtinGroupDefs } from '~/rules/builtin'
-import { matchRules } from '~/rules/engine'
+import { builtinRuleGroups } from '~/rules/builtin'
+import { matchGroups } from '~/rules/engine'
 
 interface GroupedMatch {
   id: string
@@ -22,22 +22,50 @@ const STORAGE_GROUPS = 'remove-redirect:user-groups'
 const SETTINGS_KEY = 'remove-redirect:settings'
 
 const userRules = ref<Rule[]>([])
-const userGroupMetas = ref<{ id: string, name: string }[]>([])
+const userGroupMetas = ref<RuleGroupMeta[]>([])
 const settings = ref<ExtensionSettings>({ enabled: true })
 const currentHostname = shallowRef('')
 const loading = shallowRef(true)
 
-const allEnabledRules = computed<Rule[]>(() => {
-  return [
-    ...builtinRuleGroups.flatMap(g => g.rules),
-    ...userRules.value,
-  ].filter(rule => rule.enabled)
+const allGroups = computed<RuleGroup[]>(() => {
+  const groups: RuleGroup[] = [...builtinRuleGroups]
+  const rulesByGroup = new Map<string, Rule[]>()
+  for (const rule of userRules.value) {
+    const gid = rule.groupId
+    if (!gid) continue
+    if (!rulesByGroup.has(gid)) rulesByGroup.set(gid, [])
+    rulesByGroup.get(gid)!.push(rule)
+  }
+  const knownIds = new Set(userGroupMetas.value.map(m => m.id))
+  for (const meta of userGroupMetas.value) {
+    groups.push({
+      id: meta.id,
+      name: meta.name,
+      domain: meta.domain,
+      isRegex: meta.isRegex,
+      enabled: meta.enabled,
+      rules: rulesByGroup.get(meta.id) ?? [],
+    })
+  }
+  // Orphan rules → single-rule groups
+  for (const rule of userRules.value) {
+    if (rule.groupId && !knownIds.has(rule.groupId)) {
+      groups.push({
+        id: `orphan-${rule.id}`,
+        name: rule.name,
+        domain: rule.domain,
+        enabled: rule.enabled,
+        rules: [rule],
+      })
+    }
+  }
+  return groups
 })
 
 const matchedRules = computed(() => {
   if (!currentHostname.value)
     return []
-  return matchRules(allEnabledRules.value, currentHostname.value)
+  return matchGroups(allGroups.value, currentHostname.value)
 })
 
 /** Build a map from rule ID to parent group info */
@@ -45,16 +73,10 @@ const ruleToGroupMap = computed(() => {
   const map = new Map<string, { groupId: string, groupName: string, isBuiltin: boolean }>()
 
   // Built-in groups
-  for (const def of builtinGroupDefs) {
-    for (const ruleId of def.ruleIds) {
-      map.set(ruleId, { groupId: def.id, groupName: def.name, isBuiltin: true })
+  for (const group of builtinRuleGroups) {
+    for (const rule of group.rules) {
+      map.set(rule.id, { groupId: group.id, groupName: group.name, isBuiltin: true })
     }
-  }
-
-  // User groups
-  for (const meta of userGroupMetas.value) {
-    // User rules reference groups via groupId, so we match at the rule level
-    // We'll find rules with matching groupId during grouping
   }
 
   return map
@@ -96,6 +118,25 @@ const matchedGroups = computed<GroupedMatch[]>(() => {
   }
 
   return Array.from(groupMap.values())
+})
+
+/** 用户自定义组中与内置同名的名称集合（同名即视为覆盖） */
+const overriddenBuiltinNames = computed<Set<string>>(() => {
+  const builtinNames = new Set(builtinRuleGroups.map(g => g.name))
+  const names = new Set<string>()
+  for (const meta of userGroupMetas.value) {
+    if (builtinNames.has(meta.name))
+      names.add(meta.name)
+  }
+  return names
+})
+
+/** 被用户覆盖的内置组不重复展示 */
+const displayedGroups = computed<GroupedMatch[]>(() => {
+  const groups = matchedGroups.value
+  if (overriddenBuiltinNames.value.size === 0 || groups.length === 0)
+    return groups
+  return groups.filter(g => !(g.isBuiltin && overriddenBuiltinNames.value.has(g.name)))
 })
 
 const globalEnabled = computed({
@@ -146,7 +187,7 @@ onMounted(loadData)
 </script>
 
 <template>
-  <main class="font-sans min-h-320px w-340px bg-[var(--rr-paper)] color-[var(--rr-ink)]">
+  <main class="font-sans w-340px bg-[var(--rr-paper)] color-[var(--rr-ink)]">
     <header class="flex items-center justify-between gap-12px border-b border-[var(--rr-line)] bg-[var(--rr-sidebar)] px-16px py-14px">
       <AppBrand compact />
       <ThemeToggle />
@@ -170,16 +211,27 @@ onMounted(loadData)
           <span class="font-mono text-13px tracking-tight">{{ matchedRules.length }}</span>
         </div>
 
-        <div v-if="matchedRules.length === 0" class="px-0 pb-2px pt-12px color-[var(--rr-subtle)] text-13px leading-[1.45]">
+        <div v-if="displayedGroups.length === 0 && matchedRules.length === 0" class="px-0 pb-2px pt-12px color-[var(--rr-subtle)] text-13px leading-[1.45]">
           当前页面没有匹配规则
+        </div>
+        <div v-else-if="displayedGroups.length === 0 && overriddenBuiltinNames.size > 0" class="px-0 pb-2px pt-12px color-[var(--rr-subtle)] text-13px leading-[1.45]">
+          同名内置规则组已隐藏
         </div>
 
         <!-- 按规则组分组展示 -->
-        <div v-for="group in matchedGroups" :key="group.id" class="border-t border-[var(--rr-line)] pt-10px mt-10px first:border-0 first:pt-0 first:mt-0">
+        <div v-for="group in displayedGroups" :key="group.id" class="border-t border-[var(--rr-line)] pt-10px mt-10px first:border-0 first:pt-0 first:mt-0">
           <div class="flex items-center gap-6px mb-6px color-[var(--rr-muted)] text-11px font-600 leading-[1.35]">
             <span>{{ group.name }}</span>
             <span class="color-[var(--rr-subtle)]">·</span>
             <span>{{ group.rules.length }}</span>
+            <span
+              v-if="group.isBuiltin"
+              class="flex-none rounded-full bg-[var(--rr-inset)] px-6px py-1px text-10px font-600 tracking-wide color-[var(--rr-subtle)]"
+            >内置</span>
+            <span
+              v-else
+              class="flex-none rounded-full bg-[var(--rr-green-soft)] px-6px py-1px text-10px font-600 tracking-wide color-[var(--rr-green-text)]"
+            >自定义</span>
           </div>
           <div v-for="rule in group.rules" :key="rule.id" class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-10px py-8px pl-10px border-l-2 border-[var(--rr-line-strong)] ml-2px">
             <div class="min-w-0">
@@ -192,7 +244,7 @@ onMounted(loadData)
       </section>
 
       <footer class="flex items-center justify-between gap-12px p-12px">
-        <span class="min-w-0 color-[var(--rr-muted)] text-12px leading-[1.35]">{{ allEnabledRules.length }} 条规则已加载</span>
+        <span class="min-w-0 color-[var(--rr-muted)] text-12px leading-[1.35]">{{ allGroups.reduce((sum, g) => sum + g.rules.filter(r => r.enabled).length, 0) }} 条规则已加载</span>
         <BaseButton variant="primary" class="min-h-34px flex-none px-12px" @click="openOptionsPage">
           <span>管理规则</span>
         </BaseButton>

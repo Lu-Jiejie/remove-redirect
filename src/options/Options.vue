@@ -2,6 +2,7 @@
 import type { RuleGroupEntry, RuleStats } from '~/components/types'
 import type { Rule, RuleFormModel, RuleMode } from '~/types/rules'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import { OverlayScrollbarsComponent } from 'overlayscrollbars-vue'
 import GroupForm from '~/components/GroupForm.vue'
 import RuleDetail from '~/components/RuleDetail.vue'
 import RuleForm from '~/components/RuleForm.vue'
@@ -148,8 +149,8 @@ function startCreateGroup() {
   showGroupForm.value = true; showRuleForm.value = false; selectedGroupId.value = null
 }
 
-function saveGroup(name: string, domain: string) {
-  const gid = createUserGroup(name, domain)
+function saveGroup(name: string, domain: string, isRegex: boolean) {
+  const gid = createUserGroup(name, domain, isRegex)
   selectedGroupId.value = gid; showGroupForm.value = false
 }
 
@@ -157,8 +158,7 @@ function forkBuiltinGroup(groupId: string) {
   const groupEntry = allRuleGroups.value.find(g => g.group.id === groupId)
   if (!groupEntry || !groupEntry.isBuiltin) return
   const { group } = groupEntry
-  const domain = group.rules[0]?.domain || ''
-  const gid = createUserGroup(group.name, domain)
+  const gid = createUserGroup(group.name, group.domain ?? '', group.isRegex ?? false)
   for (const rule of group.rules) {
     addRule({ ...rule, id: generateId(), groupId: gid })
   }
@@ -227,7 +227,9 @@ function onToggleRule(ruleId: string, enabled: boolean) {
 }
 
 function onUpdateGroupName(id: string, name: string) { updateUserGroup(id, { name }) }
-function onUpdateGroupDomain(id: string, domain: string) { updateUserGroup(id, { domain }) }
+function onUpdateGroupDomain(id: string, domain: string, isRegex: boolean) {
+  updateUserGroup(id, { domain, isRegex })
+}
 
 function selectGroup(id: string) {
   selectedGroupId.value = id; showGroupForm.value = false; showRuleForm.value = false
@@ -242,7 +244,7 @@ onMounted(loadRulesData)
 </script>
 
 <template>
-  <main class="font-sans flex min-h-100vh min-w-0 bg-[var(--rr-canvas)] color-[var(--rr-ink)] max-md:flex-col">
+  <main class="font-sans flex min-w-0 bg-[var(--rr-canvas)] color-[var(--rr-ink)] h-screen overflow-hidden max-md:h-auto max-md:overflow-visible max-md:min-h-screen max-md:flex-col">
     <RuleSidebar
       v-model:enabled="globalEnabled"
       v-model:search="searchQuery"
@@ -253,7 +255,12 @@ onMounted(loadRulesData)
       @select="selectGroup"
     />
 
-    <section class="min-w-0 flex-1 overflow-y-auto p-32px max-md:p-18px" style="scrollbar-gutter: stable">
+    <OverlayScrollbarsComponent
+      tag="section"
+      class="min-w-0 flex-1 p-32px max-md:p-18px max-md:overflow-visible"
+      :options="{ scrollbars: { autoHide: 'scroll', theme: 'os-theme-rr' }, overflow: { y: 'scroll' } }"
+      defer
+    >
       <div v-if="!ready" class="grid min-h-420px place-items-center color-[var(--rr-muted)] text-14px">加载中...</div>
 
       <GroupForm v-else-if="showGroupForm" :existing-groups="userGroupMetas" @cancel="cancelForm" @save="saveGroup" />
@@ -273,6 +280,6 @@ onMounted(loadRulesData)
         @update-group-name="onUpdateGroupName"
         @update-group-domain="onUpdateGroupDomain"
       />
-    </section>
+    </OverlayScrollbarsComponent>
   </main>
 </template>

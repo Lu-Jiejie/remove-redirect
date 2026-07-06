@@ -1,5 +1,5 @@
 import { createLocalFontProcessor } from '@unocss/preset-web-fonts/local'
-import { presetAttributify, presetIcons, presetUno, presetWebFonts, transformerDirectives } from 'unocss'
+import { presetAttributify, presetIcons, presetUno, presetWebFonts, transformerDirectives,presetWind4 } from 'unocss'
 import { defineConfig } from 'unocss/vite'
 
 export default defineConfig({
@@ -22,7 +22,7 @@ export default defineConfig({
     'rr-code': 'inline-block font-mono color-[var(--rr-ink)] bg-[var(--rr-inset)] rounded-5px px-5px py-1px leading-[1.5]',
   },
   presets: [
-    presetUno(),
+    presetWind4(),
     presetAttributify(),
     presetIcons({
       warn: true,

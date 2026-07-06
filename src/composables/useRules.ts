@@ -96,7 +96,7 @@ function migrateOrphanRules() {
       const gid = `user-${rule.id}`
       rule.groupId = gid
       if (!knownIds.has(gid)) {
-        userGroupMetas.value.push({ id: gid, name: rule.name, domain: rule.domain, enabled: rule.enabled })
+        userGroupMetas.value.push({ id: gid, name: rule.name, domain: rule.domain, isRegex: rule.isRegex || undefined, enabled: rule.enabled })
         knownIds.add(gid)
       }
       changed = true
@@ -138,9 +138,9 @@ function toggleRule(id: string) {
 }
 
 /** Create a new user rule group and select it */
-function createUserGroup(name: string, domain: string): string {
+function createUserGroup(name: string, domain: string, isRegex?: boolean): string {
   const id = `user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
-  userGroupMetas.value = [...userGroupMetas.value, { id, name, domain, enabled: true }]
+  userGroupMetas.value = [...userGroupMetas.value, { id, name, domain, isRegex, enabled: true }]
   return id
 }
 

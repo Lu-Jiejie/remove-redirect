@@ -19,13 +19,14 @@ const emit = defineEmits<{
   'delete-group': []
   fork: [groupId: string]
   'update-group-name': [id: string, name: string]
-  'update-group-domain': [id: string, domain: string]
+  'update-group-domain': [id: string, domain: string, isRegex: boolean]
 }>()
 
 const editingName = ref(false)
 const editingDomain = ref(false)
 const editNameValue = ref('')
 const editDomainValue = ref('')
+const editDomainIsRegex = ref(false)
 
 watch(() => props.entry?.group.id, () => {
   editingName.value = false
@@ -41,6 +42,7 @@ function startEditName() {
 function startEditDomain() {
   if (!props.entry || props.isBuiltin) return
   editDomainValue.value = props.entry.group.domain || ''
+  editDomainIsRegex.value = props.entry.group.isRegex ?? false
   editingDomain.value = true
 }
 
@@ -52,11 +54,19 @@ function saveEditName() {
   editingName.value = false
 }
 
+function cancelEditName() {
+  editingName.value = false
+}
+
 function saveEditDomain() {
   if (!props.entry || editingDomain.value === false) return
   const trimmed = editDomainValue.value.trim()
-  if (trimmed && trimmed !== (props.entry.group.domain || ''))
-    emit('update-group-domain', props.entry.group.id, trimmed)
+  if (trimmed && (trimmed !== (props.entry.group.domain || '') || editDomainIsRegex.value !== !!props.entry.group.isRegex))
+    emit('update-group-domain', props.entry.group.id, trimmed, editDomainIsRegex.value)
+  editingDomain.value = false
+}
+
+function cancelEditDomain() {
   editingDomain.value = false
 }
 </script>
@@ -74,8 +84,17 @@ function saveEditDomain() {
           </div>
 
           <!-- 组名称 -->
-          <div v-if="!isBuiltin && editingName" class="mt-14px">
-            <BaseInput v-model="editNameValue" mono class="text-22px font-700 leading-[1.18]" placeholder="规则组名称" @keyup.enter="saveEditName" @keyup.escape="editingName = false" @blur="saveEditName" />
+          <div v-if="!isBuiltin && editingName" class="mt-14px flex items-center gap-8px">
+            <BaseInput v-model="editNameValue" mono class="flex-1 text-22px font-700 leading-[1.18]" placeholder="规则组名称" @keyup.enter="saveEditName" @keyup.escape="cancelEditName" />
+            <div class="flex flex-none items-center gap-6px">
+              <BaseButton variant="primary" class="h-40px px-12px gap-6px text-12px" @click="saveEditName">
+                <span class="i-carbon:checkmark h-14px w-14px" />
+                <span>保存</span>
+              </BaseButton>
+              <button type="button" class="rr-icon-ghost h-40px w-40px color-[var(--rr-muted)] hover:color-[var(--rr-ink)]" title="取消" @click="cancelEditName">
+                <span class="i-carbon:close h-16px w-16px" />
+              </button>
+            </div>
           </div>
           <h1 v-else class="m-0 mt-14px color-[var(--rr-ink)] text-28px font-700 leading-[1.18] tracking-tight [overflow-wrap:anywhere] cursor-pointer group flex items-center gap-10px" @click="startEditName">
             {{ entry.group.name }}
@@ -83,13 +102,28 @@ function saveEditDomain() {
           </h1>
 
           <!-- 组域名 -->
-          <div v-if="!isBuiltin" class="mt-8px flex items-center gap-8px">
-            <div v-if="editingDomain" class="flex-1 max-w-400px">
-              <BaseInput v-model="editDomainValue" mono class="text-14px" placeholder="zhihu.com" @keyup.enter="saveEditDomain" @keyup.escape="editingDomain = false" @blur="saveEditDomain" />
+          <div v-if="!isBuiltin" class="mt-8px">
+            <div v-if="editingDomain" class="flex-1 max-w-460px">
+              <div class="flex items-center gap-8px">
+                <BaseInput v-model="editDomainValue" mono class="flex-1 text-14px" :placeholder="editDomainIsRegex ? '(example\\.com|example\\.org)' : 'zhihu.com'" @keyup.enter="saveEditDomain" @keyup.escape="cancelEditDomain" />
+                <div class="flex flex-none items-center gap-6px">
+                  <BaseButton variant="primary" class="h-40px px-12px gap-6px text-12px" @click="saveEditDomain">
+                    <span class="i-carbon:checkmark h-14px w-14px" />
+                    <span>保存</span>
+                  </BaseButton>
+                  <button type="button" class="rr-icon-ghost h-40px w-40px color-[var(--rr-muted)] hover:color-[var(--rr-ink)]" title="取消" @click="cancelEditDomain">
+                    <span class="i-carbon:close h-16px w-16px" />
+                  </button>
+                </div>
+              </div>
+              <label class="mt-8px flex items-center gap-6px cursor-pointer select-none">
+                <input type="checkbox" v-model="editDomainIsRegex" class="h-14px w-14px flex-none accent-[var(--rr-green)]" />
+                <span class="color-[var(--rr-muted)] text-11px font-500 leading-none">正则表达式</span>
+              </label>
             </div>
             <div v-else class="flex items-center gap-8px color-[var(--rr-muted)] text-13px font-mono leading-[1.45] cursor-pointer group" @click="startEditDomain">
-              <span class="i-carbon:globe h-15px w-15px flex-none" />
               <span>{{ entry.group.domain || '未设置域名' }}</span>
+              <span v-if="entry.group.isRegex" class="rounded-full bg-[var(--rr-inset)] px-6px py-1px text-10px font-650 tracking-wide color-[var(--rr-subtle)]">正则</span>
               <span class="i-carbon:edit h-14px w-14px color-[var(--rr-muted)] opacity-0 group-hover:opacity-100 transition-opacity duration-140" />
             </div>
           </div>
@@ -129,8 +163,7 @@ function saveEditDomain() {
                   </h2>
                   <ModeBadge :mode="rule.mode" />
                 </div>
-                <div class="mt-8px flex items-center gap-8px color-[var(--rr-muted)] text-13px font-mono leading-[1.45]">
-                  <span class="i-carbon:globe h-14px w-14px flex-none" />
+                <div class="mt-8px color-[var(--rr-muted)] text-13px font-mono leading-[1.45]">
                   <span class="overflow-hidden text-ellipsis whitespace-nowrap">{{ rule.domain }}</span>
                 </div>
               </div>

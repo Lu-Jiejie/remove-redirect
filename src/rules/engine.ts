@@ -1,10 +1,17 @@
-import type { Rule } from '~/types/rules'
+import type { Rule, RuleGroup } from '~/types/rules'
 
 /**
  * 格式化域名：去除协议、端口、www 前缀
  */
 export function formatHostname(hostname: string): string {
   return hostname.replace(/^www\./, '').toLowerCase()
+}
+
+/**
+ * 判断普通字符串域名是否匹配当前 hostname
+ */
+function matchDomain(domain: string, hostname: string, formatted: string): boolean {
+  return domain === formatted || hostname.endsWith(`.${domain}`) || domain.endsWith(`.${formatted}`)
 }
 
 /**
@@ -18,8 +25,46 @@ export function matchRules(rules: Rule[], hostname: string): Rule[] {
     if (rule.isRegex) {
       return new RegExp(rule.domain).test(formatted)
     }
-    return rule.domain === formatted || hostname.endsWith(`.${rule.domain}`) || rule.domain.endsWith(`.${formatted}`)
+    return matchDomain(rule.domain, hostname, formatted)
   })
+}
+
+/**
+ * 按规则组匹配：优先用 group.domain 命中整组，
+ * 未命中再回退到组内逐条规则各自的 domain 匹配。
+ * 返回去重后的已启用规则。
+ */
+export function matchGroups(groups: RuleGroup[], hostname: string): Rule[] {
+  const formatted = formatHostname(hostname)
+  const seen = new Set<string>()
+  const result: Rule[] = []
+
+  for (const group of groups) {
+    if (group.enabled === false)
+      continue
+
+    // 组域名匹配：支持正则与字符串两种模式
+    let groupHit = false
+    if (group.domain) {
+      groupHit = group.isRegex
+        ? new RegExp(group.domain).test(formatted)
+        : matchDomain(group.domain, hostname, formatted)
+    }
+
+    // 组域名命中 → 该组全部启用规则生效；否则回退逐条匹配
+    const rules = groupHit
+      ? group.rules.filter(r => r.enabled)
+      : matchRules(group.rules, hostname)
+
+    for (const rule of rules) {
+      if (seen.has(rule.id))
+        continue
+      seen.add(rule.id)
+      result.push(rule)
+    }
+  }
+
+  return result
 }
 
 /**

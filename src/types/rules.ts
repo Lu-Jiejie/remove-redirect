@@ -67,6 +67,8 @@ export interface RuleGroup {
   name: string
   /** 关联域名 */
   domain?: string
+  /** domain 是否为正则表达式 */
+  isRegex?: boolean
   /** 组是否启用 */
   enabled: boolean
   /** 组内规则列表 */
@@ -78,6 +80,7 @@ export interface RuleGroupMeta {
   id: string
   name: string
   domain: string
+  isRegex?: boolean
   enabled: boolean
 }
 

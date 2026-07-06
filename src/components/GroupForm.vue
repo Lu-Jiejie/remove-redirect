@@ -10,11 +10,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   cancel: []
-  save: [name: string, domain: string]
+  save: [name: string, domain: string, isRegex: boolean]
 }>()
 
 const name = ref('')
 const domain = ref('')
+const isRegex = ref(false)
 
 const domainConflict = computed(() => {
   if (!domain.value.trim() || !props.existingGroups)
@@ -28,7 +29,7 @@ const domainConflict = computed(() => {
 function submit() {
   if (!name.value.trim() || !domain.value.trim())
     return
-  emit('save', name.value.trim(), domain.value.trim())
+  emit('save', name.value.trim(), domain.value.trim(), isRegex.value)
 }
 </script>
 
@@ -62,10 +63,14 @@ function submit() {
         <span class="rr-label">域名</span>
         <BaseInput
           v-model="domain"
-          placeholder="zhihu.com"
+          :placeholder="isRegex ? '(example\\.com|example\\.org)' : 'zhihu.com'"
         />
-        <span class="color-[var(--rr-subtle)] text-11px leading-[1.35]">该组关联的主域名</span>
-        <div v-if="domainConflict" class="flex items-center gap-6px rounded-6px border border-[var(--rr-orange-line)] bg-[var(--rr-orange-soft)] px-10px py-8px color-[var(--rr-orange-text)] text-12px leading-[1.35]">
+        <label class="flex items-center gap-6px cursor-pointer select-none">
+          <input type="checkbox" v-model="isRegex" class="h-14px w-14px flex-none accent-[var(--rr-green)]" />
+          <span class="color-[var(--rr-subtle)] text-11px font-500 leading-none">正则表达式</span>
+        </label>
+        <span class="color-[var(--rr-subtle)] text-11px leading-[1.35]">该组关联的{{ isRegex ? '正则表达式（将用于匹配当前页面的 hostname）' : '主域名' }}</span>
+        <div v-if="!isRegex && domainConflict" class="flex items-center gap-6px rounded-6px border border-[var(--rr-orange-line)] bg-[var(--rr-orange-soft)] px-10px py-8px color-[var(--rr-orange-text)] text-12px leading-[1.35]">
           <span class="i-carbon:warning-alt h-14px w-14px flex-none" />
           <span>域名已在规则组「{{ domainConflict.name }}」中使用</span>
         </div>

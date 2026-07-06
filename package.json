@@ -75,5 +75,9 @@
   },
   "nano-staged": {
     "*.{js,ts,tsx,jsx,vue,mjs,mts,cjs,cts}": "eslint --fix"
+  },
+  "dependencies": {
+    "overlayscrollbars": "^2.16.0",
+    "overlayscrollbars-vue": "^0.5.10"
   }
 }

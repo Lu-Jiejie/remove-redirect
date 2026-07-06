@@ -1,7 +1,7 @@
-import type { Rule } from '~/types/rules'
+import type { Rule, RuleGroup, RuleGroupMeta } from '~/types/rules'
 import browser from 'webextension-polyfill'
-import { getFlatBuiltinRules } from '~/rules/builtin'
-import { extractUrl, getSearchParamsValue, matchRules, validateUrl } from '~/rules/engine'
+import { builtinRuleGroups } from '~/rules/builtin'
+import { extractUrl, getSearchParamsValue, matchGroups, validateUrl } from '~/rules/engine'
 
 /**
  * Remove Redirect — Content Script
@@ -12,34 +12,74 @@ import { extractUrl, getSearchParamsValue, matchRules, validateUrl } from '~/rul
  * 如需拦截 window.open，注入 <script> 到页面上下文。
  */
 
-async function getEnabledRules(): Promise<Rule[]> {
+async function getEnabledGroups(): Promise<RuleGroup[]> {
   try {
-    const [stored, storedSettings] = await Promise.all([
-      browser.storage.local.get('remove-redirect:user-rules'),
-      browser.storage.local.get('remove-redirect:settings'),
+    const stored = await browser.storage.local.get([
+      'remove-redirect:user-rules',
+      'remove-redirect:user-groups',
+      'remove-redirect:settings',
     ])
-    const settings = storedSettings['remove-redirect:settings']
-      ? JSON.parse(storedSettings['remove-redirect:settings'] as string)
+    const settings = stored['remove-redirect:settings']
+      ? JSON.parse(stored['remove-redirect:settings'] as string)
       : { enabled: true }
 
     if (!settings.enabled)
       return []
 
+    // Built-in groups (already have hardcoded group.domain)
+    const groups: RuleGroup[] = [...builtinRuleGroups]
+
+    // User rules & group metas
     const userRules: Rule[] = stored['remove-redirect:user-rules']
       ? JSON.parse(stored['remove-redirect:user-rules'] as string)
       : []
+    const userGroupMetas: RuleGroupMeta[] = stored['remove-redirect:user-groups']
+      ? JSON.parse(stored['remove-redirect:user-groups'] as string)
+      : []
 
-    return [...getFlatBuiltinRules(), ...userRules].filter(r => r.enabled)
+    // Build user groups
+    const rulesByGroup = new Map<string, Rule[]>()
+    for (const rule of userRules) {
+      const gid = rule.groupId
+      if (!gid) continue
+      if (!rulesByGroup.has(gid)) rulesByGroup.set(gid, [])
+      rulesByGroup.get(gid)!.push(rule)
+    }
+    const knownGroupIds = new Set(userGroupMetas.map(m => m.id))
+    for (const meta of userGroupMetas) {
+      groups.push({
+        id: meta.id,
+        name: meta.name,
+        domain: meta.domain,
+        isRegex: meta.isRegex,
+        enabled: meta.enabled,
+        rules: rulesByGroup.get(meta.id) ?? [],
+      })
+    }
+    // Orphan rules → single-rule groups
+    for (const rule of userRules) {
+      if (rule.groupId && !knownGroupIds.has(rule.groupId)) {
+        groups.push({
+          id: `orphan-${rule.id}`,
+          name: rule.name,
+          domain: rule.domain,
+          enabled: rule.enabled,
+          rules: [rule],
+        })
+      }
+    }
+
+    return groups
   }
   catch {
-    return getFlatBuiltinRules().filter(r => r.enabled)
+    return [...builtinRuleGroups]
   }
 }
 
 async function main() {
-  const allRules = await getEnabledRules()
+  const allGroups = await getEnabledGroups()
   const hostname = window.location.hostname
-  const matched = matchRules(allRules, hostname)
+  const matched = matchGroups(allGroups, hostname)
 
   if (matched.length === 0)
     return
@@ -251,4 +291,4 @@ else {
 }
 
 // 导出供 background 消息通信
-export { getEnabledRules }
+export { getEnabledGroups }
