@@ -21,6 +21,9 @@ const allRules = computed<RuleListEntry[]>(() => {
   return [...builtin, ...user]
 })
 
+const byName = (a: RuleGroupEntry, b: RuleGroupEntry) =>
+  a.group.name.localeCompare(b.group.name, 'zh-Hans-CN', { numeric: true })
+
 /** 按组结构组织的完整规则列表 */
 const allRuleGroups = computed<RuleGroupEntry[]>(() => {
   const builtin = builtinRuleGroups.map(group => ({ group, isBuiltin: true }))
@@ -54,7 +57,9 @@ const allRuleGroups = computed<RuleGroupEntry[]>(() => {
       isBuiltin: false,
     }))
 
-  return [...builtin, ...userGroups, ...orphanGroups]
+  const sortedBuiltin = [...builtin].sort(byName)
+  const sortedUser = [...userGroups, ...orphanGroups].sort(byName)
+  return [...sortedBuiltin, ...sortedUser]
 })
 
 async function loadRulesData() {

@@ -20,6 +20,7 @@ body,
   --rr-line: #18181b1a;
   --rr-line-strong: #18181b30;
   --rr-inset: #18181b14;
+  --rr-item-hover: #18181b0d;
   --rr-shadow: #18181b2e;
   --rr-focus: #0596696b;
   --rr-green: #059669;
@@ -57,6 +58,7 @@ body,
   --rr-line: #d4d4d821;
   --rr-line-strong: #d4d4d83d;
   --rr-inset: #00000036;
+  --rr-item-hover: #ffffff0d;
   --rr-shadow: #0000005c;
   --rr-focus: #34d39975;
   --rr-green: #34d399;

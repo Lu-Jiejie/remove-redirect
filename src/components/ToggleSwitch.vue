@@ -45,7 +45,7 @@ function toggle() {
     @click="toggle"
   >
     <span
-      class="relative rounded-full border shadow-[inset_0_1px_2px_var(--rr-inset)] transition-[background-color,border-color] duration-160 ease-out active:scale-[0.94]"
+      class="relative rounded-full border shadow-[inset_0_1px_2px_var(--rr-inset)] transition-[background-color,border-color] duration-160 ease-out"
       :class="trackClasses"
     >
       <span

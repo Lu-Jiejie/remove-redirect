@@ -33,24 +33,24 @@ function submit() {
 </script>
 
 <template>
-  <section class="border border-[var(--rr-line)] rounded-12px bg-[var(--rr-paper)] mx-auto max-w-680px p-34px max-md:p-24px shadow-[0_4px_24px_var(--rr-shadow)]">
+  <section class="rr-card mx-auto max-w-980px p-34px max-md:p-24px">
     <header class="flex items-start justify-between gap-24px pb-24px">
       <div>
-        <div class="color-[var(--rr-muted)] text-12px font-600 leading-[1.35]">
+        <div class="rr-label">
           自定义规则组
         </div>
         <h1 class="m-0 mt-12px color-[var(--rr-ink)] text-28px font-700 leading-[1.18] tracking-tight">
           新建规则组
         </h1>
       </div>
-      <button type="button" class="inline-grid h-36px w-36px flex-none place-items-center border border-[var(--rr-line)] rounded-8px bg-[var(--rr-control)] color-[var(--rr-muted)] cursor-pointer transition-[background-color,border-color,color,transform] duration-140 ease-out hover:bg-[var(--rr-control-hover)] hover:color-[var(--rr-ink)] hover:border-[var(--rr-line-strong)] active:scale-[0.92] focus-visible:outline-2 focus-visible:outline-[var(--rr-focus)] focus-visible:outline-offset-2" aria-label="关闭" @click="emit('cancel')">
+      <button type="button" class="rr-icon-btn h-36px w-36px flex-none" aria-label="关闭" @click="emit('cancel')">
         <span class="i-carbon:close" />
       </button>
     </header>
 
     <div class="space-y-16px">
       <label class="grid gap-8px">
-        <span class="color-[var(--rr-muted)] text-12px font-600 leading-[1.35]">组名称</span>
+        <span class="rr-label">组名称</span>
         <BaseInput
           v-model="name"
           placeholder="知乎"
@@ -59,7 +59,7 @@ function submit() {
       </label>
 
       <label class="grid gap-8px">
-        <span class="color-[var(--rr-muted)] text-12px font-600 leading-[1.35]">域名</span>
+        <span class="rr-label">域名</span>
         <BaseInput
           v-model="domain"
           placeholder="zhihu.com"

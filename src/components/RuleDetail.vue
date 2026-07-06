@@ -63,11 +63,11 @@ function saveEditDomain() {
 
 <template>
   <template v-if="entry">
-    <div class="border border-[var(--rr-line)] rounded-12px bg-[var(--rr-paper)] mx-auto max-w-980px p-34px max-md:p-24px shadow-[0_4px_24px_var(--rr-shadow)]">
+    <div class="rr-card mx-auto max-w-980px p-34px max-md:p-24px">
       <!-- 组头部 -->
       <header class="flex items-start justify-between gap-24px border-b border-[var(--rr-line)] pb-26px max-md:flex-col">
         <div class="min-w-0 flex-1">
-          <div class="flex flex-wrap items-center gap-10px color-[var(--rr-muted)] text-12px font-600 leading-none">
+          <div class="rr-label flex flex-wrap items-center gap-10px leading-none">
             <span>{{ isBuiltin ? '内置规则组' : '自定义规则组' }}</span>
             <span class="h-16px w-1px bg-[var(--rr-line-strong)]" />
             <span>{{ entry.group.rules.length }} 条规则</span>
@@ -120,7 +120,7 @@ function saveEditDomain() {
         </div>
 
         <div v-else class="grid gap-10px">
-          <article v-for="rule in entry.group.rules" :key="rule.id" class="border border-[var(--rr-line)] rounded-10px bg-[var(--rr-panel)] p-18px transition-[border-color,box-shadow] duration-140 ease-out hover:border-[var(--rr-line-strong)] hover:shadow-[0_2px_12px_var(--rr-shadow)]">
+          <article v-for="rule in entry.group.rules" :key="rule.id" class="group rr-well p-18px transition-[border-color,box-shadow] duration-140 ease-out hover:border-[var(--rr-line-strong)] hover:shadow-[0_2px_12px_var(--rr-shadow)]">
             <div class="flex items-start justify-between gap-14px">
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-8px">
@@ -135,8 +135,32 @@ function saveEditDomain() {
                 </div>
               </div>
 
-              <!-- 操作栏：开关 + 编辑 + 删除 -->
-              <div class="flex flex-none items-center gap-6px">
+              <!-- 操作栏：编辑 + 删除（悬停显现） + 开关 -->
+              <div class="flex flex-none items-center gap-8px">
+                <div
+                  v-if="!isBuiltin"
+                  class="flex items-center gap-2px rounded-8px p-2px opacity-0 transition-opacity duration-140 ease-out group-hover:opacity-100 focus-within:opacity-100 max-md:opacity-100"
+                >
+                  <button
+                    type="button"
+                    title="编辑规则"
+                    class="rr-icon-ghost h-28px w-28px hover:bg-[var(--rr-inset)] hover:color-[var(--rr-ink)]"
+                    @click="emit('edit', rule.id)"
+                  >
+                    <span class="i-carbon:edit h-14.5px w-14.5px" />
+                  </button>
+                  <button
+                    type="button"
+                    title="删除规则"
+                    class="rr-icon-ghost h-28px w-28px hover:bg-[var(--rr-danger-soft)] hover:color-[var(--rr-danger-text)]"
+                    @click="emit('delete', rule.id)"
+                  >
+                    <span class="i-carbon:trash-can h-14.5px w-14.5px" />
+                  </button>
+                </div>
+
+                <span v-if="!isBuiltin" class="h-16px w-1px flex-none bg-[var(--rr-line)] opacity-0 transition-opacity duration-140 group-hover:opacity-100 max-md:opacity-100" />
+
                 <ToggleSwitch
                   v-if="!isBuiltin"
                   :model-value="rule.enabled"
@@ -144,69 +168,50 @@ function saveEditDomain() {
                   :label="rule.enabled ? '停用' : '启用'"
                   @update:model-value="emit('toggle', rule.id, $event)"
                 />
-                <span v-else class="inline-flex items-center gap-4px rounded-4px px-6px py-2px text-11px font-600 leading-none" :class="rule.enabled ? 'color-[var(--rr-green-text)] bg-[var(--rr-green-soft)]' : 'color-[var(--rr-muted)] bg-[var(--rr-panel-muted)]'">
+                <span v-else class="inline-flex items-center gap-4px rounded-full px-8px py-3px text-11px font-600 leading-none" :class="rule.enabled ? 'color-[var(--rr-green-text)] bg-[var(--rr-green-soft)]' : 'color-[var(--rr-muted)] bg-[var(--rr-panel-muted)]'">
                   {{ rule.enabled ? '启用' : '停用' }}
                 </span>
-
-                <button
-                  v-if="!isBuiltin"
-                  type="button"
-                  title="编辑规则"
-                  class="inline-grid min-h-30px w-30px place-items-center border-0 rounded-6px bg-transparent color-[var(--rr-muted)] cursor-pointer transition-[background-color,color] duration-140 ease-out hover:bg-[var(--rr-panel-muted)] hover:color-[var(--rr-ink)] active:scale-[0.92]"
-                  @click="emit('edit', rule.id)"
-                >
-                  <span class="i-carbon:edit h-14px w-14px" />
-                </button>
-                <button
-                  v-if="!isBuiltin"
-                  type="button"
-                  title="删除规则"
-                  class="inline-grid min-h-30px w-30px place-items-center border-0 rounded-6px bg-transparent color-[var(--rr-danger-text)] cursor-pointer transition-[background-color,color] duration-140 ease-out hover:bg-[var(--rr-danger-soft)] active:scale-[0.92]"
-                  @click="emit('delete', rule.id)"
-                >
-                  <span class="i-carbon:trash-can h-14px w-14px" />
-                </button>
               </div>
             </div>
 
             <!-- 规则详情行 -->
-            <div class="mt-12px grid grid-cols-2 gap-x-14px gap-y-6px max-md:grid-cols-1">
+            <div class="mt-14px flex flex-wrap items-center gap-x-8px gap-y-8px border-t border-[var(--rr-line)] pt-14px">
               <template v-if="rule.transform">
                 <div class="color-[var(--rr-muted)] text-11px font-500 leading-[1.35]">
                   <span class="font-600">选择器：</span>
-                  <code class="font-mono color-[var(--rr-ink)]">{{ rule.transform.selector }}</code>
+                  <code class="rr-code">{{ rule.transform.selector }}</code>
                 </div>
                 <div v-if="rule.transform.paramKey" class="color-[var(--rr-muted)] text-11px font-500 leading-[1.35]">
                   <span class="font-600">参数：</span>
-                  <code class="font-mono color-[var(--rr-ink)]">{{ rule.transform.paramKey }}</code>
+                  <code class="rr-code">{{ rule.transform.paramKey }}</code>
                 </div>
                 <div v-if="rule.transform.attribute" class="color-[var(--rr-muted)] text-11px font-500 leading-[1.35]">
                   <span class="font-600">属性：</span>
-                  <code class="font-mono color-[var(--rr-ink)]">{{ rule.transform.attribute }}</code>
+                  <code class="rr-code">{{ rule.transform.attribute }}</code>
                 </div>
               </template>
               <template v-if="rule.autojump">
                 <div v-if="rule.autojump.paramKey" class="color-[var(--rr-muted)] text-11px font-500 leading-[1.35]">
                   <span class="font-600">参数：</span>
-                  <code class="font-mono color-[var(--rr-ink)]">{{ rule.autojump.paramKey }}</code>
+                  <code class="rr-code">{{ rule.autojump.paramKey }}</code>
                 </div>
                 <div v-if="rule.autojump.pathPattern" class="color-[var(--rr-muted)] text-11px font-500 leading-[1.35]">
                   <span class="font-600">路径：</span>
-                  <code class="font-mono color-[var(--rr-ink)]">{{ rule.autojump.pathPattern }}</code>
+                  <code class="rr-code">{{ rule.autojump.pathPattern }}</code>
                 </div>
                 <div v-if="rule.autojump.clickSelector" class="color-[var(--rr-muted)] text-11px font-500 leading-[1.35]">
                   <span class="font-600">点击：</span>
-                  <code class="font-mono color-[var(--rr-ink)]">{{ rule.autojump.clickSelector }}</code>
+                  <code class="rr-code">{{ rule.autojump.clickSelector }}</code>
                 </div>
               </template>
               <template v-if="rule.rewriteOpen">
                 <div class="color-[var(--rr-muted)] text-11px font-500 leading-[1.35]">
                   <span class="font-600">匹配：</span>
-                  <code class="font-mono color-[var(--rr-ink)]">{{ rule.rewriteOpen.matchString }}</code>
+                  <code class="rr-code">{{ rule.rewriteOpen.matchString }}</code>
                 </div>
                 <div v-if="rule.rewriteOpen.paramKey" class="color-[var(--rr-muted)] text-11px font-500 leading-[1.35]">
                   <span class="font-600">参数：</span>
-                  <code class="font-mono color-[var(--rr-ink)]">{{ rule.rewriteOpen.paramKey }}</code>
+                  <code class="rr-code">{{ rule.rewriteOpen.paramKey }}</code>
                 </div>
               </template>
               <div v-if="rule.isRegex" class="color-[var(--rr-muted)] text-11px font-500 leading-[1.35]">
@@ -221,7 +226,7 @@ function saveEditDomain() {
   </template>
 
   <!-- 空状态 -->
-  <section v-else class="border border-[var(--rr-line)] rounded-12px bg-[var(--rr-paper)] mx-auto grid min-h-420px max-w-980px place-items-center content-center gap-18px p-34px text-center shadow-[0_4px_24px_var(--rr-shadow)]">
+  <section v-else class="rr-card mx-auto grid min-h-420px max-w-980px place-items-center content-center gap-18px p-34px text-center">
     <span class="i-carbon:rule h-58px w-58px color-[var(--rr-line-strong)]" />
     <div>
       <h1 class="m-0 color-[var(--rr-ink)] text-24px font-700 leading-[1.2] tracking-tight">未选择规则组</h1>
