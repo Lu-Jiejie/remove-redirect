@@ -9,8 +9,8 @@ export default defineConfig({
     presetIcons(),
     presetWebFonts({
       fonts: {
-        sans: ['Inter:400,600,800', 'Noto Sans SC:400,600,800'],
-        mono: ['Fira Code:400,600,800', 'Noto Sans SC:400,600,800'],
+        sans: ['Outfit:400,600,800', 'Noto Sans SC:400,600,800'],
+        mono: ['JetBrains Mono:400,600,800', 'Noto Sans SC:400,600,800'],
       },
       processors: createLocalFontProcessor(),
     }),

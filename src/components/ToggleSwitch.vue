@@ -19,8 +19,8 @@ const switchClasses = computed(() => ({
 const trackClasses = computed(() => ({
   'h-20px w-34px': props.size === 'sm',
   'h-24px w-42px': props.size !== 'sm',
-  'border-[var(--rr-green-line)] bg-[var(--rr-green)]': checked.value,
-  'border-[var(--rr-line-strong)] bg-[var(--rr-switch-off)]': !checked.value,
+  'border-[var(--rr-green)]/34 bg-[var(--rr-green)]': checked.value,
+  'border-[var(--rr-ink)]/19 bg-[var(--rr-switch-off)]': !checked.value,
 }))
 
 const thumbClasses = computed(() => ({
@@ -45,7 +45,7 @@ function toggle() {
     @click="toggle"
   >
     <span
-      class="relative rounded-full border shadow-[inset_0_1px_2px_var(--rr-inset)] transition-[background-color,border-color] duration-160 ease-out"
+      class="relative rounded-full border shadow-[inset_0_1px_2px_var(--rr-inset)] transition-[background-color,border-color] duration-160 ease-out active:scale-[0.94]"
       :class="trackClasses"
     >
       <span

@@ -73,7 +73,7 @@ onMounted(loadData)
 
 <template>
   <main class="font-sans min-h-320px w-340px bg-[var(--rr-paper)] color-[var(--rr-ink)]">
-    <header class="flex items-center justify-between gap-12px border-b border-[var(--rr-line)] bg-[var(--rr-sidebar)] p-16px">
+    <header class="flex items-center justify-between gap-12px border-b border-[var(--rr-ink)]/10 bg-[var(--rr-sidebar)] px-16px py-14px">
       <AppBrand compact />
       <ThemeToggle />
     </header>
@@ -83,14 +83,14 @@ onMounted(loadData)
     </section>
 
     <template v-else>
-      <section class="mx-12px mt-12px flex items-center justify-between rounded-8px bg-[var(--rr-panel)] px-14px py-12px">
+      <section class="mx-12px mt-12px flex items-center justify-between rounded-10px border border-[var(--rr-ink)]/10 bg-[var(--rr-panel)] px-14px py-12px">
         <span class="text-16px font-700 leading-none tracking-0" :class="settings.enabled ? 'color-[var(--rr-green-text)]' : 'color-[var(--rr-orange-text)]'">
           {{ statusText }}
         </span>
         <ToggleSwitch v-model="globalEnabled" size="sm" label="切换全局引擎" />
       </section>
 
-      <section class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel)] mx-12px mt-12px p-12px">
+      <section class="border border-[var(--rr-ink)]/10 rounded-10px bg-[var(--rr-panel)] mx-12px mt-12px p-12px">
         <div class="color-[var(--rr-muted)] text-12px font-600 leading-[1.35]">
           当前页面
         </div>
@@ -100,17 +100,17 @@ onMounted(loadData)
         </div>
       </section>
 
-      <section class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel)] mx-12px mt-12px p-12px">
+      <section class="border border-[var(--rr-ink)]/10 rounded-10px bg-[var(--rr-panel)] mx-12px mt-12px p-12px">
         <div class="flex items-center justify-between color-[var(--rr-muted)] text-12px font-600 leading-[1.35]">
           <span>匹配规则</span>
-          <span>{{ matchedRules.length }}</span>
+          <span class="font-mono text-13px tracking-tight">{{ matchedRules.length }}</span>
         </div>
 
-        <div v-if="matchedRules.length === 0" class="px-0 pb-2px pt-10px color-[var(--rr-subtle)] text-13px leading-[1.45]">
+        <div v-if="matchedRules.length === 0" class="px-0 pb-2px pt-12px color-[var(--rr-subtle)] text-13px leading-[1.45]">
           当前页面没有匹配规则
         </div>
 
-        <div v-for="rule in matchedRules" :key="rule.id" class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-10px border-t border-[var(--rr-line)] py-9px">
+        <div v-for="rule in matchedRules" :key="rule.id" class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-10px border-t border-[var(--rr-ink)]/10 py-10px">
           <div class="min-w-0">
             <span class="block overflow-hidden color-[var(--rr-ink)] text-13px font-620 leading-[1.45] tracking-0 text-ellipsis whitespace-nowrap">{{ rule.name }}</span>
             <span class="font-mono mt-2px block overflow-hidden color-[var(--rr-muted)] text-11px leading-[1.4] text-ellipsis whitespace-nowrap">{{ rule.domain }}</span>

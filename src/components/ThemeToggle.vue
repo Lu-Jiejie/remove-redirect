@@ -7,7 +7,7 @@ const { isDark, themeLabel, toggleTheme } = useThemeMode()
 <template>
   <button
     type="button"
-    class="inline-grid h-34px w-34px flex-none place-items-center border border-[var(--rr-line)] rounded-8px bg-[var(--rr-control)] color-[var(--rr-muted)] cursor-pointer transition-[background-color,border-color,color,box-shadow] duration-160 ease-out hover:border-[var(--rr-line-strong)] hover:bg-[var(--rr-control-hover)] hover:color-[var(--rr-ink)] focus-visible:outline-2 focus-visible:outline-[var(--rr-focus)] focus-visible:outline-offset-2"
+    class="inline-grid h-34px w-34px flex-none place-items-center border border-[var(--rr-ink)]/10 rounded-8px bg-[var(--rr-control)] color-[var(--rr-muted)] cursor-pointer transition-[background-color,border-color,color,box-shadow,transform] duration-160 ease-out hover:border-[var(--rr-ink)]/19 hover:bg-[var(--rr-control-hover)] hover:color-[var(--rr-ink)] hover:shadow-[0_4px_12px_var(--rr-shadow)] active:scale-[0.92] focus-visible:outline-2 focus-visible:outline-[var(--rr-focus)] focus-visible:outline-offset-2"
     :aria-label="themeLabel"
     :title="themeLabel"
     @click="toggleTheme"

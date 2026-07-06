@@ -23,31 +23,31 @@ const enabled = defineModel<boolean>('enabled', { required: true })
 </script>
 
 <template>
-  <aside class="flex h-100vh w-340px min-w-300px flex-col border-r border-[var(--rr-line)] bg-[var(--rr-sidebar)] max-md:h-auto max-md:max-h-70vh max-md:w-full max-md:min-w-0 max-md:border-b max-md:border-r-0">
-    <header class="flex items-center justify-between gap-14px px-22px pb-18px pt-24px">
+  <aside class="flex h-100vh w-356px min-w-300px flex-col border-r border-[var(--rr-ink)]/10 bg-[var(--rr-sidebar)] max-md:h-auto max-md:max-h-70vh max-md:w-full max-md:min-w-0 max-md:border-b max-md:border-r-0">
+    <header class="flex items-center justify-between gap-14px px-22px pb-16px pt-24px">
       <AppBrand />
       <ThemeToggle />
     </header>
 
-    <section class="mx-16px mb-14px flex items-center justify-between rounded-8px bg-[var(--rr-panel)] px-16px py-13px">
-      <span class="text-18px font-700 leading-none tracking-0" :class="enabled ? 'color-[var(--rr-green-text)]' : 'color-[var(--rr-orange-text)]'">
+    <section class="mx-16px mb-14px flex items-center justify-between rounded-10px bg-[var(--rr-panel)] border border-[var(--rr-ink)]/10 px-16px py-13px">
+      <span class="text-17px font-700 leading-none tracking-0" :class="enabled ? 'color-[var(--rr-green-text)]' : 'color-[var(--rr-orange-text)]'">
         {{ enabled ? '已启用' : '已暂停' }}
       </span>
       <ToggleSwitch v-model="enabled" label="切换全局引擎" />
     </section>
 
     <section class="mx-16px mb-14px grid grid-cols-3 gap-8px" aria-label="规则统计">
-      <div class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel-muted)] min-w-0 px-8px py-10px">
-        <span class="block color-[var(--rr-ink)] font-mono text-18px font-650 leading-none">{{ stats.total }}</span>
-        <span class="mt-6px block color-[var(--rr-muted)] text-11px leading-none">总数</span>
+      <div class="border border-[var(--rr-ink)]/10 rounded-10px bg-[var(--rr-panel)] min-w-0 px-10px py-11px">
+        <span class="block color-[var(--rr-ink)] font-mono text-20px font-650 leading-none tracking-tight">{{ stats.total }}</span>
+        <span class="mt-6px block color-[var(--rr-muted)] text-11px font-500 leading-none">总数</span>
       </div>
-      <div class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel-muted)] min-w-0 px-8px py-10px">
-        <span class="block color-[var(--rr-ink)] font-mono text-18px font-650 leading-none">{{ stats.enabled }}</span>
-        <span class="mt-6px block color-[var(--rr-muted)] text-11px leading-none">启用</span>
+      <div class="border border-[var(--rr-ink)]/10 rounded-10px bg-[var(--rr-panel)] min-w-0 px-10px py-11px">
+        <span class="block color-[var(--rr-ink)] font-mono text-20px font-650 leading-none tracking-tight">{{ stats.enabled }}</span>
+        <span class="mt-6px block color-[var(--rr-muted)] text-11px font-500 leading-none">启用</span>
       </div>
-      <div class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel-muted)] min-w-0 px-8px py-10px">
-        <span class="block color-[var(--rr-ink)] font-mono text-18px font-650 leading-none">{{ stats.user }}</span>
-        <span class="mt-6px block color-[var(--rr-muted)] text-11px leading-none">自定义</span>
+      <div class="border border-[var(--rr-ink)]/10 rounded-10px bg-[var(--rr-panel)] min-w-0 px-10px py-11px">
+        <span class="block color-[var(--rr-ink)] font-mono text-20px font-650 leading-none tracking-tight">{{ stats.user }}</span>
+        <span class="mt-6px block color-[var(--rr-muted)] text-11px font-500 leading-none">自定义</span>
       </div>
     </section>
 
@@ -60,13 +60,13 @@ const enabled = defineModel<boolean>('enabled', { required: true })
       />
     </label>
 
-    <div class="flex items-center justify-between px-22px pb-8px color-[var(--rr-muted)] text-11px font-650 leading-[1.35]">
+    <div class="flex items-center justify-between px-22px pb-8px color-[var(--rr-muted)] text-11px font-600 leading-[1.35]">
       <span>规则库</span>
       <span>{{ entries.length }} / {{ stats.total }}</span>
     </div>
 
-    <div class="flex min-h-0 flex-1 flex-col gap-7px overflow-y-auto px-10px pb-12px">
-      <div v-if="entries.length === 0" class="m-18px mx-8px border border-dashed border-[var(--rr-line-strong)] rounded-8px px-12px py-22px color-[var(--rr-muted)] text-center text-13px">
+    <div class="flex min-h-0 flex-1 flex-col gap-6px overflow-y-auto px-10px pb-12px" style="scrollbar-gutter: stable">
+      <div v-if="entries.length === 0" class="m-18px mx-8px border border-dashed border-[var(--rr-ink)]/19 rounded-10px px-12px py-22px color-[var(--rr-muted)] text-center text-13px">
         无匹配规则
       </div>
 
@@ -74,9 +74,10 @@ const enabled = defineModel<boolean>('enabled', { required: true })
         v-for="{ rule, isBuiltin } in entries"
         :key="rule.id"
         type="button"
-        class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-12px border border-transparent rounded-8px bg-transparent px-11px py-11px pl-12px color-inherit text-left cursor-pointer transition-[background-color,border-color,transform] duration-140 ease-out hover:border-[var(--rr-line)] hover:bg-[var(--rr-panel-muted)]"
+        class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-12px border rounded-10px bg-transparent px-11px py-11px pl-12px color-inherit text-left cursor-pointer transition-[background-color,border-color,transform] duration-140 ease-out hover:border-[var(--rr-ink)]/10 hover:bg-[var(--rr-panel)] hover:shadow-[0_2px_8px_var(--rr-shadow)] active:scale-[0.98]"
         :class="{
-          'border-[var(--rr-green-line)] bg-[var(--rr-green-soft)]': activeId === rule.id,
+          'border-[var(--rr-green)]/34 bg-[var(--rr-green-soft)] shadow-[0_2px_8px_var(--rr-shadow)]': activeId === rule.id,
+          'border-transparent': activeId !== rule.id,
           'opacity-52': !rule.enabled,
         }"
         @click="emit('select', rule.id)"
@@ -92,8 +93,8 @@ const enabled = defineModel<boolean>('enabled', { required: true })
       </button>
     </div>
 
-    <footer class="border-t border-[var(--rr-line)] px-16px pb-16px pt-12px">
-      <BaseButton variant="primary" class="w-full" @click="emit('add')">
+    <footer class="border-t border-[var(--rr-ink)]/10 px-16px pb-16px pt-12px">
+      <BaseButton variant="primary" class="w-full gap-8px" @click="emit('add')">
         <span class="i-carbon:add" />
         <span>新建规则</span>
       </BaseButton>

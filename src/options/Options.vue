@@ -190,7 +190,7 @@ onMounted(loadRulesData)
       @select="selectRule"
     />
 
-    <section class="min-w-0 flex-1 overflow-y-auto p-32px max-md:p-18px">
+    <section class="min-w-0 flex-1 overflow-y-auto p-32px max-md:p-18px" style="scrollbar-gutter: stable">
       <div v-if="!ready" class="grid min-h-420px place-items-center color-[var(--rr-muted)] text-14px">
         加载中...
       </div>

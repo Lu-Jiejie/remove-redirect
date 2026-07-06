@@ -31,22 +31,22 @@ function save() {
 </script>
 
 <template>
-  <section class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel)] mx-auto max-w-980px p-34px max-md:p-24px">
-    <header class="flex items-start justify-between gap-24px border-b border-[var(--rr-line)] pb-24px">
+  <section class="border border-[var(--rr-ink)]/10 rounded-12px bg-[var(--rr-paper)] mx-auto max-w-980px p-34px max-md:p-24px shadow-[0_4px_24px_var(--rr-shadow)]">
+    <header class="flex items-start justify-between gap-24px border-b border-[var(--rr-ink)]/10 pb-24px">
       <div>
         <div class="color-[var(--rr-muted)] text-12px font-600 leading-[1.35]">
           自定义规则
         </div>
-        <h1 class="m-0 mt-12px color-[var(--rr-ink)] text-28px font-700 leading-[1.18] tracking-0">
+        <h1 class="m-0 mt-12px color-[var(--rr-ink)] text-28px font-700 leading-[1.18] tracking-tight">
           新建规则
         </h1>
       </div>
-      <button type="button" class="inline-grid h-36px w-36px flex-none place-items-center border border-[var(--rr-line)] rounded-8px bg-[var(--rr-control)] color-[var(--rr-muted)] cursor-pointer hover:bg-[var(--rr-control-hover)] hover:color-[var(--rr-ink)] focus-visible:outline-2 focus-visible:outline-[var(--rr-focus)] focus-visible:outline-offset-2" aria-label="关闭表单" @click="emit('cancel')">
+      <button type="button" class="inline-grid h-36px w-36px flex-none place-items-center border border-[var(--rr-ink)]/10 rounded-8px bg-[var(--rr-control)] color-[var(--rr-muted)] cursor-pointer transition-[background-color,border-color,color,transform] duration-140 ease-out hover:bg-[var(--rr-control-hover)] hover:color-[var(--rr-ink)] hover:border-[var(--rr-ink)]/19 active:scale-[0.92] focus-visible:outline-2 focus-visible:outline-[var(--rr-focus)] focus-visible:outline-offset-2" aria-label="关闭表单" @click="emit('cancel')">
         <span class="i-carbon:close" />
       </button>
     </header>
 
-    <div class="border-b border-[var(--rr-line)] py-24px">
+    <div class="border-b border-[var(--rr-ink)]/10 py-24px">
       <div class="mb-14px color-[var(--rr-ink)] text-14px font-700 leading-[1.35]">
         基础信息
       </div>
@@ -63,18 +63,18 @@ function save() {
       </div>
 
       <div class="mt-16px flex flex-wrap items-center gap-16px">
-        <label class="inline-flex items-center gap-8px color-[var(--rr-ink)] text-13px cursor-pointer">
+        <label class="inline-flex items-center gap-8px color-[var(--rr-ink)] text-13px cursor-pointer select-none">
           <input v-model="form.isRegex" type="checkbox" class="h-16px w-16px accent-[var(--rr-green)]">
           <span>域名为正则</span>
         </label>
-        <label class="inline-flex items-center gap-8px color-[var(--rr-ink)] text-13px cursor-pointer">
+        <label class="inline-flex items-center gap-8px color-[var(--rr-ink)] text-13px cursor-pointer select-none">
           <input v-model="form.enabled" type="checkbox" class="h-16px w-16px accent-[var(--rr-green)]">
           <span>启用</span>
         </label>
       </div>
     </div>
 
-    <div class="border-b border-[var(--rr-line)] py-24px">
+    <div class="border-b border-[var(--rr-ink)]/10 py-24px">
       <div class="mb-14px color-[var(--rr-ink)] text-14px font-700 leading-[1.35]">
         规则模式
       </div>
@@ -82,8 +82,8 @@ function save() {
         <label
           v-for="mode in modes"
           :key="mode"
-          class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel-muted)] flex min-w-0 items-center gap-10px p-14px cursor-pointer transition-[background-color,border-color] duration-140 ease-out"
-          :class="{ 'border-[var(--rr-green-line)] bg-[var(--rr-green-soft)]': form.mode === mode }"
+          class="border border-[var(--rr-ink)]/10 rounded-10px bg-[var(--rr-panel-muted)] flex min-w-0 items-center gap-10px p-14px cursor-pointer transition-[background-color,border-color,transform] duration-140 ease-out hover:border-[var(--rr-ink)]/19 active:scale-[0.98]"
+          :class="{ 'border-[var(--rr-green)]/34 bg-[var(--rr-green-soft)] shadow-[0_2px_8px_var(--rr-shadow)]': form.mode === mode }"
         >
           <input v-model="form.mode" type="radio" class="sr-only" :value="mode">
           <span class="h-20px w-20px flex-none color-[var(--rr-green)]" :class="ruleModeMeta[mode].icon" />
@@ -92,7 +92,7 @@ function save() {
       </div>
     </div>
 
-    <div v-if="form.mode === 'transform'" class="border-b border-[var(--rr-line)] py-24px">
+    <div v-if="form.mode === 'transform'" class="border-b border-[var(--rr-ink)]/10 py-24px">
       <div class="mb-14px color-[var(--rr-ink)] text-14px font-700 leading-[1.35]">
         链接转换配置
       </div>
@@ -126,7 +126,7 @@ function save() {
       </label>
     </div>
 
-    <div v-if="form.mode === 'autojump'" class="border-b border-[var(--rr-line)] py-24px">
+    <div v-if="form.mode === 'autojump'" class="border-b border-[var(--rr-ink)]/10 py-24px">
       <div class="mb-14px color-[var(--rr-ink)] text-14px font-700 leading-[1.35]">
         自动跳转配置
       </div>
@@ -150,7 +150,7 @@ function save() {
       </div>
     </div>
 
-    <div v-if="form.mode === 'rewrite-open'" class="border-b border-[var(--rr-line)] py-24px">
+    <div v-if="form.mode === 'rewrite-open'" class="border-b border-[var(--rr-ink)]/10 py-24px">
       <div class="mb-14px color-[var(--rr-ink)] text-14px font-700 leading-[1.35]">
         window.open 拦截配置
       </div>

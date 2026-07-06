@@ -15,7 +15,7 @@ const boxSize = computed(() => props.compact ? 'h-34px w-34px' : 'h-40px w-40px'
 
 <template>
   <div class="flex min-w-0 items-center" :class="compact ? 'gap-10px' : 'gap-12px'">
-    <span class="grid flex-none place-items-center border border-[var(--rr-line)] rounded-8px bg-[var(--rr-mark)] shadow-[inset_0_-1px_0_var(--rr-inset)]" :class="boxSize">
+    <span class="grid flex-none place-items-center border border-[var(--rr-ink)]/10 rounded-10px bg-[var(--rr-mark)] shadow-[inset_0_-1px_0_var(--rr-inset),0_2px_8px_var(--rr-shadow)]" :class="boxSize">
       <img :src="logoUrl" alt="" class="block" :class="logoSize">
     </span>
     <div class="min-w-0">
