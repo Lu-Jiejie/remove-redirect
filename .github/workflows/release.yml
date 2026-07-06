@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build extension
+        run: pnpm build
+
+      - name: Setup or generate private key
+        env:
+          CRX_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
+        run: |
+          if [ -n "$CRX_KEY" ]; then
+            echo "Using stored private key"
+            echo "$CRX_KEY" > key.pem
+          else
+            echo "No CRX_PRIVATE_KEY secret found, generating a new key"
+            echo "NOTE: extension ID will change between releases without a persistent key"
+            npx crx keygen
+          fi
+
+      - name: Pack CRX
+        run: pnpm pack:crx
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: extension.crx
+          generate_release_notes: true
