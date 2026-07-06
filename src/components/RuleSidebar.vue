@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { RuleListEntry, RuleStats } from './types'
 import AppBrand from './AppBrand.vue'
+import BaseButton from './BaseButton.vue'
+import BaseInput from './BaseInput.vue'
 import ModeBadge from './ModeBadge.vue'
 import ThemeToggle from './ThemeToggle.vue'
 import ToggleSwitch from './ToggleSwitch.vue'
@@ -23,44 +25,39 @@ const enabled = defineModel<boolean>('enabled', { required: true })
 <template>
   <aside class="flex h-100vh w-340px min-w-300px flex-col border-r border-[var(--rr-line)] bg-[var(--rr-sidebar)] max-md:h-auto max-md:max-h-70vh max-md:w-full max-md:min-w-0 max-md:border-b max-md:border-r-0">
     <header class="flex items-center justify-between gap-14px px-22px pb-18px pt-24px">
-      <AppBrand :status="enabled ? 'active' : 'paused'" />
+      <AppBrand />
       <ThemeToggle />
     </header>
 
-    <section class="rr-panel mx-16px mb-14px flex items-center justify-between p-14px">
-      <div>
-        <div class="rr-label">
-          全局引擎
-        </div>
-        <div class="mt-6px text-15px font-650 leading-none" :class="enabled ? 'color-[var(--rr-green-text)]' : 'color-[var(--rr-orange-text)]'">
-          {{ enabled ? '已启用' : '已暂停' }}
-        </div>
-      </div>
+    <section class="mx-16px mb-14px flex items-center justify-between rounded-8px bg-[var(--rr-panel)] px-16px py-13px">
+      <span class="text-18px font-700 leading-none tracking-0" :class="enabled ? 'color-[var(--rr-green-text)]' : 'color-[var(--rr-orange-text)]'">
+        {{ enabled ? '已启用' : '已暂停' }}
+      </span>
       <ToggleSwitch v-model="enabled" label="切换全局引擎" />
     </section>
 
     <section class="mx-16px mb-14px grid grid-cols-3 gap-8px" aria-label="规则统计">
-      <div class="rr-panel-muted min-w-0 px-8px py-10px">
-        <span class="block color-[var(--rr-ink)] rr-mono text-18px font-650 leading-none">{{ stats.total }}</span>
+      <div class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel-muted)] min-w-0 px-8px py-10px">
+        <span class="block color-[var(--rr-ink)] font-mono text-18px font-650 leading-none">{{ stats.total }}</span>
         <span class="mt-6px block color-[var(--rr-muted)] text-11px leading-none">总数</span>
       </div>
-      <div class="rr-panel-muted min-w-0 px-8px py-10px">
-        <span class="block color-[var(--rr-ink)] rr-mono text-18px font-650 leading-none">{{ stats.enabled }}</span>
+      <div class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel-muted)] min-w-0 px-8px py-10px">
+        <span class="block color-[var(--rr-ink)] font-mono text-18px font-650 leading-none">{{ stats.enabled }}</span>
         <span class="mt-6px block color-[var(--rr-muted)] text-11px leading-none">启用</span>
       </div>
-      <div class="rr-panel-muted min-w-0 px-8px py-10px">
-        <span class="block color-[var(--rr-ink)] rr-mono text-18px font-650 leading-none">{{ stats.user }}</span>
+      <div class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel-muted)] min-w-0 px-8px py-10px">
+        <span class="block color-[var(--rr-ink)] font-mono text-18px font-650 leading-none">{{ stats.user }}</span>
         <span class="mt-6px block color-[var(--rr-muted)] text-11px leading-none">自定义</span>
       </div>
     </section>
 
     <label class="relative mx-16px mb-14px block">
       <span class="i-carbon:search absolute left-12px top-1/2 h-15px w-15px color-[var(--rr-muted)] -translate-y-1/2" />
-      <input
+      <BaseInput
         v-model="search"
-        class="rr-input pl-36px leading-[1.4]"
+        class="pl-36px leading-[1.4]"
         placeholder="搜索名称或域名"
-      >
+      />
     </label>
 
     <div class="flex items-center justify-between px-22px pb-8px color-[var(--rr-muted)] text-11px font-650 leading-[1.35]">
@@ -86,7 +83,7 @@ const enabled = defineModel<boolean>('enabled', { required: true })
       >
         <span class="min-w-0">
           <span class="block overflow-hidden color-[var(--rr-ink)] text-14px font-620 leading-[1.45] tracking-0 text-ellipsis whitespace-nowrap">{{ rule.name }}</span>
-          <span class="rr-mono mt-3px block overflow-hidden color-[var(--rr-muted)] text-11px leading-[1.45] text-ellipsis whitespace-nowrap">{{ rule.domain }}</span>
+          <span class="font-mono mt-3px block overflow-hidden color-[var(--rr-muted)] text-11px leading-[1.45] text-ellipsis whitespace-nowrap">{{ rule.domain }}</span>
         </span>
         <span class="flex flex-col items-end gap-6px">
           <ModeBadge :mode="rule.mode" short />
@@ -96,10 +93,10 @@ const enabled = defineModel<boolean>('enabled', { required: true })
     </div>
 
     <footer class="border-t border-[var(--rr-line)] px-16px pb-16px pt-12px">
-      <button type="button" class="rr-button rr-button-primary w-full" @click="emit('add')">
+      <BaseButton variant="primary" class="w-full" @click="emit('add')">
         <span class="i-carbon:add" />
         <span>新建规则</span>
-      </button>
+      </BaseButton>
     </footer>
   </aside>
 </template>

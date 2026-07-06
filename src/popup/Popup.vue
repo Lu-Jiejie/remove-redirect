@@ -2,10 +2,11 @@
 import type { ExtensionSettings, Rule } from '~/types/rules'
 import { computed, onMounted, ref, shallowRef } from 'vue'
 import browser from 'webextension-polyfill'
-import AppBrand from '~/components/extension/AppBrand.vue'
-import ModeBadge from '~/components/extension/ModeBadge.vue'
-import ThemeToggle from '~/components/extension/ThemeToggle.vue'
-import ToggleSwitch from '~/components/extension/ToggleSwitch.vue'
+import AppBrand from '~/components/AppBrand.vue'
+import BaseButton from '~/components/BaseButton.vue'
+import ModeBadge from '~/components/ModeBadge.vue'
+import ThemeToggle from '~/components/ThemeToggle.vue'
+import ToggleSwitch from '~/components/ToggleSwitch.vue'
 import { builtinRules } from '~/rules/builtin'
 import { matchRules } from '~/rules/engine'
 
@@ -73,7 +74,7 @@ onMounted(loadData)
 <template>
   <main class="font-sans min-h-320px w-340px bg-[var(--rr-paper)] color-[var(--rr-ink)]">
     <header class="flex items-center justify-between gap-12px border-b border-[var(--rr-line)] bg-[var(--rr-sidebar)] p-16px">
-      <AppBrand compact :status="settings.enabled ? 'active' : 'paused'" />
+      <AppBrand compact />
       <ThemeToggle />
     </header>
 
@@ -82,29 +83,24 @@ onMounted(loadData)
     </section>
 
     <template v-else>
-      <section class="rr-panel mx-12px mt-12px flex items-center justify-between gap-12px p-12px">
-        <div>
-          <div class="rr-label">
-            全局引擎
-          </div>
-          <div class="mt-5px text-14px font-650 leading-[1.35]" :class="settings.enabled ? 'color-[var(--rr-green-text)]' : 'color-[var(--rr-orange-text)]'">
-            {{ statusText }}
-          </div>
-        </div>
+      <section class="mx-12px mt-12px flex items-center justify-between rounded-8px bg-[var(--rr-panel)] px-14px py-12px">
+        <span class="text-16px font-700 leading-none tracking-0" :class="settings.enabled ? 'color-[var(--rr-green-text)]' : 'color-[var(--rr-orange-text)]'">
+          {{ statusText }}
+        </span>
         <ToggleSwitch v-model="globalEnabled" size="sm" label="切换全局引擎" />
       </section>
 
-      <section class="rr-panel mx-12px mt-12px p-12px">
-        <div class="rr-label">
+      <section class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel)] mx-12px mt-12px p-12px">
+        <div class="color-[var(--rr-muted)] text-12px font-600 leading-[1.35]">
           当前页面
         </div>
         <div class="mt-8px flex min-w-0 items-center gap-8px">
           <span class="i-carbon:globe h-15px w-15px flex-none color-[var(--rr-muted)]" />
-          <span class="rr-mono overflow-hidden color-[var(--rr-ink)] text-12px leading-[1.45] text-ellipsis whitespace-nowrap">{{ currentHostname || '未知页面' }}</span>
+          <span class="font-mono overflow-hidden color-[var(--rr-ink)] text-12px leading-[1.45] text-ellipsis whitespace-nowrap">{{ currentHostname || '未知页面' }}</span>
         </div>
       </section>
 
-      <section class="rr-panel mx-12px mt-12px p-12px">
+      <section class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel)] mx-12px mt-12px p-12px">
         <div class="flex items-center justify-between color-[var(--rr-muted)] text-12px font-600 leading-[1.35]">
           <span>匹配规则</span>
           <span>{{ matchedRules.length }}</span>
@@ -117,7 +113,7 @@ onMounted(loadData)
         <div v-for="rule in matchedRules" :key="rule.id" class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-10px border-t border-[var(--rr-line)] py-9px">
           <div class="min-w-0">
             <span class="block overflow-hidden color-[var(--rr-ink)] text-13px font-620 leading-[1.45] tracking-0 text-ellipsis whitespace-nowrap">{{ rule.name }}</span>
-            <span class="rr-mono mt-2px block overflow-hidden color-[var(--rr-muted)] text-11px leading-[1.4] text-ellipsis whitespace-nowrap">{{ rule.domain }}</span>
+            <span class="font-mono mt-2px block overflow-hidden color-[var(--rr-muted)] text-11px leading-[1.4] text-ellipsis whitespace-nowrap">{{ rule.domain }}</span>
           </div>
           <ModeBadge :mode="rule.mode" short />
         </div>
@@ -125,9 +121,9 @@ onMounted(loadData)
 
       <footer class="flex items-center justify-between gap-12px p-12px">
         <span class="min-w-0 color-[var(--rr-muted)] text-12px leading-[1.35]">{{ allEnabledRules.length }} 条规则已加载</span>
-        <button type="button" class="rr-button rr-button-primary min-h-34px flex-none px-12px" @click="openOptionsPage">
+        <BaseButton variant="primary" class="min-h-34px flex-none px-12px" @click="openOptionsPage">
           <span>管理规则</span>
-        </button>
+        </BaseButton>
       </footer>
     </template>
   </main>

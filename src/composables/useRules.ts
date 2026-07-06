@@ -1,4 +1,4 @@
-import type { RuleListEntry } from '~/components/extension/types'
+import type { RuleListEntry } from '~/components/types'
 import type { ExtensionSettings, Rule } from '~/types/rules'
 import { computed, ref, watch } from 'vue'
 import browser from 'webextension-polyfill'

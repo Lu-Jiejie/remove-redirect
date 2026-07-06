@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { RuleListEntry, RuleStats } from '~/components/extension/types'
+import type { RuleListEntry, RuleStats } from '~/components/types'
 import type { Rule, RuleFormModel, RuleMode } from '~/types/rules'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
-import RuleDetail from '~/components/extension/RuleDetail.vue'
-import RuleForm from '~/components/extension/RuleForm.vue'
-import RuleSidebar from '~/components/extension/RuleSidebar.vue'
+import RuleDetail from '~/components/RuleDetail.vue'
+import RuleForm from '~/components/RuleForm.vue'
+import RuleSidebar from '~/components/RuleSidebar.vue'
 import { useRules } from '~/composables/useRules'
 import { generateId } from '~/rules/engine'
 

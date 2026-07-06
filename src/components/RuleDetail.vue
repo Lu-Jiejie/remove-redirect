@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { RuleListEntry } from './types'
 import { computed } from 'vue'
+import BaseButton from './BaseButton.vue'
 import ModeBadge from './ModeBadge.vue'
 
 const props = defineProps<{
@@ -58,7 +59,7 @@ const detailRows = computed<DetailRow[]>(() => {
 </script>
 
 <template>
-  <section v-if="entry" class="rr-surface mx-auto max-w-980px p-34px max-md:p-24px">
+  <section v-if="entry" class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel)] mx-auto max-w-980px p-34px max-md:p-24px">
     <header class="flex items-start justify-between gap-24px border-b border-[var(--rr-line)] pb-26px max-md:flex-col">
       <div class="min-w-0">
         <div class="flex flex-wrap items-center gap-10px color-[var(--rr-muted)] text-12px font-600 leading-none">
@@ -71,21 +72,20 @@ const detailRows = computed<DetailRow[]>(() => {
         </h1>
       </div>
 
-      <button
+      <BaseButton
         v-if="!entry.isBuiltin"
-        type="button"
-        class="rr-button rr-button-danger"
+        variant="danger"
         @click="emit('delete', entry.rule.id)"
       >
         <span class="i-carbon:trash-can" />
         <span>删除</span>
-      </button>
+      </BaseButton>
     </header>
 
-    <div class="mt-24px grid grid-cols-2 gap-12px max-md:grid-cols-1">
-      <article v-for="row in detailRows" :key="`${row.label}:${row.value}`" class="rr-panel-muted min-w-0 p-14px">
+    <div class="mt-24px grid grid-cols-2 gap-14px max-md:grid-cols-1">
+      <article v-for="row in detailRows" :key="`${row.label}:${row.value}`" class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel-muted)] min-w-0 p-16px">
         <span class="block color-[var(--rr-muted)] text-12px font-600 leading-[1.35]">{{ row.label }}</span>
-        <code class="rr-mono mt-10px block overflow-hidden color-[var(--rr-ink)] text-13px leading-[1.6] [overflow-wrap:anywhere] text-ellipsis">{{ row.value }}</code>
+        <code class="font-mono mt-12px block overflow-hidden color-[var(--rr-ink)] text-15px leading-[1.55] [overflow-wrap:anywhere] text-ellipsis">{{ row.value }}</code>
       </article>
     </div>
 
@@ -95,14 +95,14 @@ const detailRows = computed<DetailRow[]>(() => {
     </div>
   </section>
 
-  <section v-else class="rr-surface mx-auto grid min-h-420px max-w-980px place-items-center content-center gap-18px p-34px text-center">
+  <section v-else class="border border-[var(--rr-line)] rounded-8px bg-[var(--rr-panel)] mx-auto grid min-h-420px max-w-980px place-items-center content-center gap-18px p-34px text-center">
     <span class="i-carbon:rule h-58px w-58px color-[var(--rr-line-strong)]" />
     <h1 class="m-0 color-[var(--rr-ink)] text-24px font-700 leading-[1.2]">
       未选择规则
     </h1>
-    <button type="button" class="rr-button rr-button-primary" @click="emit('add')">
+    <BaseButton variant="primary" @click="emit('add')">
       <span class="i-carbon:add" />
       <span>新建规则</span>
-    </button>
+    </BaseButton>
   </section>
 </template>
