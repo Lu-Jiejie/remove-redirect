@@ -1,10 +1,10 @@
 {
-  "name": "vitesse-webext",
-  "displayName": "Vitesse WebExt",
+  "name": "remove-redirect",
+  "displayName": "Remove Redirect",
   "version": "0.0.1",
   "private": true,
   "packageManager": "pnpm@11.9.0",
-  "description": "[description]",
+  "description": "A browser extension that removes the redirection of external links.",
   "scripts": {
     "dev": "npm run clear && cross-env NODE_ENV=development run-p \"dev:*\"",
     "dev-firefox": "npm run clear && cross-env NODE_ENV=development EXTENSION=firefox run-p \"dev:*\"",
@@ -28,7 +28,8 @@
     "test": "vitest test",
     "test:e2e": "playwright test",
     "postinstall": "simple-git-hooks",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "release": "bumpp"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.1.0",
@@ -46,6 +47,7 @@
     "@vue/test-utils": "^2.4.11",
     "@vueuse/core": "^14.3.0",
     "@vueuse/shared": "^14.3.0",
+    "bumpp": "^11.1.0",
     "chokidar": "^5.0.0",
     "cross-env": "^10.1.0",
     "crx": "^5.0.1",
