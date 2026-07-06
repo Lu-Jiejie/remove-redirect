@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import type { Rule } from '~/types/rules'
-import { computed, onMounted, ref } from 'vue'
+import type { ExtensionSettings, Rule } from '~/types/rules'
+import { computed, onMounted, ref, shallowRef } from 'vue'
 import browser from 'webextension-polyfill'
+import AppBrand from '~/components/extension/AppBrand.vue'
+import ModeBadge from '~/components/extension/ModeBadge.vue'
+import ThemeToggle from '~/components/extension/ThemeToggle.vue'
+import ToggleSwitch from '~/components/extension/ToggleSwitch.vue'
 import { builtinRules } from '~/rules/builtin'
 import { matchRules } from '~/rules/engine'
 
@@ -9,19 +13,29 @@ const STORAGE_KEY = 'remove-redirect:user-rules'
 const SETTINGS_KEY = 'remove-redirect:settings'
 
 const userRules = ref<Rule[]>([])
-const settings = ref({ enabled: true })
-const currentHostname = ref('')
-const loading = ref(true)
+const settings = ref<ExtensionSettings>({ enabled: true })
+const currentHostname = shallowRef('')
+const loading = shallowRef(true)
 
-const allRules = computed<Rule[]>(() => {
-  return [...builtinRules, ...userRules.value].filter(r => r.enabled)
+const allEnabledRules = computed<Rule[]>(() => {
+  return [...builtinRules, ...userRules.value].filter(rule => rule.enabled)
 })
 
 const matchedRules = computed(() => {
   if (!currentHostname.value)
     return []
-  return matchRules(allRules.value, currentHostname.value)
+  return matchRules(allEnabledRules.value, currentHostname.value)
 })
+
+const globalEnabled = computed({
+  get: () => settings.value.enabled,
+  set: (enabled: boolean) => {
+    settings.value = { ...settings.value, enabled }
+    saveSettings()
+  },
+})
+
+const statusText = computed(() => settings.value.enabled ? '已启用' : '已暂停')
 
 async function loadData() {
   try {
@@ -29,92 +43,92 @@ async function loadData() {
       browser.storage.local.get([STORAGE_KEY, SETTINGS_KEY]),
       browser.tabs.query({ active: true, currentWindow: true }),
     ])
+
     if (stored[STORAGE_KEY])
       userRules.value = JSON.parse(stored[STORAGE_KEY] as string)
     if (stored[SETTINGS_KEY])
-      settings.value = JSON.parse(stored[SETTINGS_KEY] as string)
-    if (tabs[0]?.url) {
+      settings.value = { enabled: true, ...JSON.parse(stored[SETTINGS_KEY] as string) }
+    if (tabs[0]?.url)
       currentHostname.value = new URL(tabs[0].url).hostname
-    }
   }
-  catch { /* ignore */ }
-  loading.value = false
+  catch {
+    currentHostname.value = ''
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+async function saveSettings() {
+  await browser.storage.local.set({ [SETTINGS_KEY]: JSON.stringify(settings.value) })
 }
 
 function openOptionsPage() {
   browser.runtime.openOptionsPage()
 }
 
-function toggleEnabled() {
-  settings.value.enabled = !settings.value.enabled
-  browser.storage.local.set({ [SETTINGS_KEY]: JSON.stringify(settings.value) })
-}
-
 onMounted(loadData)
 </script>
 
 <template>
-  <main class="w-[320px] bg-white text-gray-800">
-    <!-- Header -->
-    <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <span class="i-carbon:shield-check w-5 h-5 text-green-500" />
-        <span class="font-bold text-sm">Remove Redirect</span>
-      </div>
-    </div>
+  <main class="font-sans min-h-320px w-340px bg-[var(--rr-paper)] color-[var(--rr-ink)]">
+    <header class="flex items-center justify-between gap-12px border-b border-[var(--rr-line)] bg-[var(--rr-sidebar)] p-16px">
+      <AppBrand compact :status="settings.enabled ? 'active' : 'paused'" />
+      <ThemeToggle />
+    </header>
 
-    <div v-if="loading" class="text-center py-6 text-gray-400 text-sm">
+    <section v-if="loading" class="grid min-h-180px place-items-center color-[var(--rr-muted)] text-13px">
       加载中...
-    </div>
+    </section>
 
-    <template v-if="!loading">
-      <!-- Status -->
-      <div class="px-4 py-3 border-b border-gray-50">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-gray-400">扩展状态</span>
-          <button
-            class="relative w-9 h-4.5 rounded-full transition-colors"
-            :class="settings.enabled ? 'bg-green-500' : 'bg-gray-300'"
-            @click="toggleEnabled"
-          >
-            <span
-              class="absolute top-0.5 w-3.5 h-3.5 bg-white rounded-full shadow transition-transform"
-              :class="settings.enabled ? 'translate-x-4.5' : 'translate-x-0.5'"
-            />
-          </button>
+    <template v-else>
+      <section class="rr-panel mx-12px mt-12px flex items-center justify-between gap-12px p-12px">
+        <div>
+          <div class="rr-label">
+            全局引擎
+          </div>
+          <div class="mt-5px text-14px font-650 leading-[1.35]" :class="settings.enabled ? 'color-[var(--rr-green-text)]' : 'color-[var(--rr-orange-text)]'">
+            {{ statusText }}
+          </div>
         </div>
-        <div class="flex items-center gap-2 text-sm">
-          <span class="i-carbon:globe w-4 h-4 text-gray-400 shrink-0" />
-          <span class="truncate">{{ currentHostname || '未知页面' }}</span>
-        </div>
-      </div>
+        <ToggleSwitch v-model="globalEnabled" size="sm" label="切换全局引擎" />
+      </section>
 
-      <!-- Matched rules -->
-      <div class="px-4 py-3 border-b border-gray-50">
-        <div class="text-xs text-gray-400 mb-2">
-          当前页面匹配规则
+      <section class="rr-panel mx-12px mt-12px p-12px">
+        <div class="rr-label">
+          当前页面
         </div>
-        <div v-if="matchedRules.length === 0" class="text-xs text-gray-300 py-1">
-          无匹配规则
+        <div class="mt-8px flex min-w-0 items-center gap-8px">
+          <span class="i-carbon:globe h-15px w-15px flex-none color-[var(--rr-muted)]" />
+          <span class="rr-mono overflow-hidden color-[var(--rr-ink)] text-12px leading-[1.45] text-ellipsis whitespace-nowrap">{{ currentHostname || '未知页面' }}</span>
         </div>
-        <div v-for="rule in matchedRules" :key="rule.id" class="flex items-center gap-2 py-1">
-          <span class="i-carbon:checkmark w-3.5 h-3.5 text-green-500 shrink-0" />
-          <span class="text-xs">{{ rule.name }}</span>
-          <span class="text-xs text-gray-400">({{ rule.mode === 'transform' ? '链接转换' : rule.mode === 'autojump' ? '跳转' : '拦截open' }})</span>
-        </div>
-      </div>
+      </section>
 
-      <!-- Info -->
-      <div class="px-4 py-3 text-xs text-gray-400">
-        <span>{{ allRules.length }} 条规则已加载</span>
-      </div>
+      <section class="rr-panel mx-12px mt-12px p-12px">
+        <div class="flex items-center justify-between color-[var(--rr-muted)] text-12px font-600 leading-[1.35]">
+          <span>匹配规则</span>
+          <span>{{ matchedRules.length }}</span>
+        </div>
 
-      <!-- Actions -->
-      <div class="px-4 py-3 flex gap-2">
-        <button class="flex-1 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors" @click="openOptionsPage">
-          管理规则
+        <div v-if="matchedRules.length === 0" class="px-0 pb-2px pt-10px color-[var(--rr-subtle)] text-13px leading-[1.45]">
+          当前页面没有匹配规则
+        </div>
+
+        <div v-for="rule in matchedRules" :key="rule.id" class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-10px border-t border-[var(--rr-line)] py-9px">
+          <div class="min-w-0">
+            <span class="block overflow-hidden color-[var(--rr-ink)] text-13px font-620 leading-[1.45] tracking-0 text-ellipsis whitespace-nowrap">{{ rule.name }}</span>
+            <span class="rr-mono mt-2px block overflow-hidden color-[var(--rr-muted)] text-11px leading-[1.4] text-ellipsis whitespace-nowrap">{{ rule.domain }}</span>
+          </div>
+          <ModeBadge :mode="rule.mode" short />
+        </div>
+      </section>
+
+      <footer class="flex items-center justify-between gap-12px p-12px">
+        <span class="min-w-0 color-[var(--rr-muted)] text-12px leading-[1.35]">{{ allEnabledRules.length }} 条规则已加载</span>
+        <button type="button" class="rr-button rr-button-primary min-h-34px flex-none px-12px" @click="openOptionsPage">
+          <span>管理规则</span>
         </button>
-      </div>
+      </footer>
     </template>
   </main>
 </template>

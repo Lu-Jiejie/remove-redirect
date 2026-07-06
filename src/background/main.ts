@@ -66,4 +66,7 @@ browser.runtime.onMessage.addListener((message: any, _sender, sendResponse) => {
       .catch(() => sendResponse({ finalUrl: null }))
     return true // 保持消息通道打开
   }
+
+  sendResponse(undefined)
+  return true
 })

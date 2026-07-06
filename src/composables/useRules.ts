@@ -1,96 +1,93 @@
-import type { Rule } from '~/types/rules'
-import { ref, watch } from 'vue'
+import type { RuleListEntry } from '~/components/extension/types'
+import type { ExtensionSettings, Rule } from '~/types/rules'
+import { computed, ref, watch } from 'vue'
 import browser from 'webextension-polyfill'
 import { builtinRules } from '~/rules/builtin'
 
 const STORAGE_KEY = 'remove-redirect:user-rules'
 const SETTINGS_KEY = 'remove-redirect:settings'
 
-/** 用户规则（可从 storage 读写） */
+const defaultSettings: ExtensionSettings = { enabled: true }
+
 const userRules = ref<Rule[]>([])
+const settings = ref<ExtensionSettings>({ ...defaultSettings })
+const ready = ref(false)
 
-/** 全局设置 */
-const settings = ref({ enabled: true })
+const allRules = computed<RuleListEntry[]>(() => {
+  const builtin = builtinRules.map(rule => ({ rule, isBuiltin: true }))
+  const user = userRules.value.map(rule => ({ rule, isBuiltin: false }))
+  return [...builtin, ...user]
+})
 
-/** 加载用户规则 */
-async function loadUserRules() {
+async function loadRulesData() {
   try {
-    const stored = await browser.storage.local.get(STORAGE_KEY)
-    if (stored[STORAGE_KEY]) {
+    const stored = await browser.storage.local.get([STORAGE_KEY, SETTINGS_KEY])
+
+    if (stored[STORAGE_KEY])
       userRules.value = JSON.parse(stored[STORAGE_KEY] as string)
-    }
+
+    if (stored[SETTINGS_KEY])
+      settings.value = { ...defaultSettings, ...JSON.parse(stored[SETTINGS_KEY] as string) }
   }
-  catch { /* first run */ }
+  catch {
+    userRules.value = []
+    settings.value = { ...defaultSettings }
+  }
+  finally {
+    ready.value = true
+  }
 }
 
-/** 保存用户规则 */
 async function saveUserRules() {
   await browser.storage.local.set({ [STORAGE_KEY]: JSON.stringify(userRules.value) })
 }
 
-/** 加载设置 */
-async function loadSettings() {
-  try {
-    const stored = await browser.storage.local.get(SETTINGS_KEY)
-    if (stored[SETTINGS_KEY]) {
-      settings.value = JSON.parse(stored[SETTINGS_KEY] as string)
-    }
-  }
-  catch { /* first run */ }
-}
-
-/** 保存设置 */
 async function saveSettings() {
   await browser.storage.local.set({ [SETTINGS_KEY]: JSON.stringify(settings.value) })
 }
 
-/** 合并后的完整规则列表（内置 + 用户，内置不可编辑） */
-const allRules = ref<{ rule: Rule, isBuiltin: boolean }[]>([])
-
-function refreshAllRules() {
-  const builtin = builtinRules.map(r => ({ rule: r, isBuiltin: true }))
-  const user = userRules.value.map(r => ({ rule: r, isBuiltin: false }))
-  allRules.value = [...builtin, ...user]
-}
-
-/** 监视用户规则变化，自动保存并刷新合并列表 */
-watch(userRules, () => {
-  saveUserRules()
-  refreshAllRules()
-}, { deep: true })
-
-watch(settings, () => {
-  saveSettings()
-}, { deep: true })
-
-// ========== CRUD 操作 ==========
-
 function addRule(rule: Rule) {
-  userRules.value.push(rule)
+  userRules.value = [...userRules.value, rule]
 }
 
 function updateRule(id: string, updates: Partial<Rule>) {
-  const index = userRules.value.findIndex(r => r.id === id)
-  if (index !== -1) {
-    userRules.value[index] = { ...userRules.value[index], ...updates }
-  }
+  userRules.value = userRules.value.map(rule =>
+    rule.id === id ? { ...rule, ...updates } : rule,
+  )
 }
 
 function removeRule(id: string) {
-  userRules.value = userRules.value.filter(r => r.id !== id)
+  userRules.value = userRules.value.filter(rule => rule.id !== id)
 }
+
+function toggleRule(id: string) {
+  const rule = userRules.value.find(item => item.id === id)
+  if (!rule)
+    return
+
+  updateRule(id, { enabled: !rule.enabled })
+}
+
+watch(userRules, () => {
+  if (ready.value)
+    saveUserRules()
+}, { deep: true })
+
+watch(settings, () => {
+  if (ready.value)
+    saveSettings()
+}, { deep: true })
 
 export function useRules() {
   return {
+    ready,
     settings,
     userRules,
     allRules,
-    loadUserRules,
-    loadSettings,
+    loadRulesData,
     addRule,
     updateRule,
     removeRule,
     toggleRule,
-    refreshAllRules,
   }
 }
