@@ -1,6 +1,6 @@
 import type { Rule } from '~/types/rules'
 import browser from 'webextension-polyfill'
-import { builtinRules } from '~/rules/builtin'
+import { getFlatBuiltinRules } from '~/rules/builtin'
 import { extractUrl, getSearchParamsValue, matchRules, validateUrl } from '~/rules/engine'
 
 /**
@@ -29,10 +29,10 @@ async function getEnabledRules(): Promise<Rule[]> {
       ? JSON.parse(stored['remove-redirect:user-rules'] as string)
       : []
 
-    return [...builtinRules, ...userRules].filter(r => r.enabled)
+    return [...getFlatBuiltinRules(), ...userRules].filter(r => r.enabled)
   }
   catch {
-    return builtinRules.filter(r => r.enabled)
+    return getFlatBuiltinRules().filter(r => r.enabled)
   }
 }
 

@@ -49,12 +49,36 @@ export interface Rule {
   isRegex: boolean
   /** 规则模式 */
   mode: RuleMode
+  /** 所属规则组 ID */
+  groupId?: string
   /** 链接转换配置（mode 为 'transform' 时必须） */
   transform?: TransformConfig
   /** 自动跳转配置（mode 为 'autojump' 时必须） */
   autojump?: AutojumpConfig
   /** 拦截 window.open 配置（mode 为 'rewrite-open' 时必须） */
   rewriteOpen?: RewriteOpenConfig
+}
+
+/** 规则组：将同一站点的相关规则聚合在一起 */
+export interface RuleGroup {
+  /** 组唯一标识 */
+  id: string
+  /** 组显示名称 */
+  name: string
+  /** 关联域名 */
+  domain?: string
+  /** 组是否启用 */
+  enabled: boolean
+  /** 组内规则列表 */
+  rules: Rule[]
+}
+
+/** 用户创建的规则组元数据 */
+export interface RuleGroupMeta {
+  id: string
+  name: string
+  domain: string
+  enabled: boolean
 }
 
 /** 用于 UI 表单的规则编辑模型 */

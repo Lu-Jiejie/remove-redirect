@@ -1,4 +1,4 @@
-import type { Rule } from '~/types/rules'
+import type { Rule, RuleGroup } from '~/types/rules'
 
 /**
  * 内置规则（基于 temp/remove-redirect 移植，结构简化优化）
@@ -1065,3 +1065,82 @@ export const builtinRules: Rule[] = [
     },
   },
 ]
+
+// ==================== 规则组定义 ====================
+
+export interface RawGroupDef {
+  id: string
+  name: string
+  ruleIds: string[]
+}
+
+/** 所有内置规则的分组定义 */
+export const builtinGroupDefs: RawGroupDef[] = [
+  { id: 'zhihu', name: '知乎', ruleIds: ['zhihu-transform', 'zhihu-autojump'] },
+  { id: 'csdn', name: 'CSDN', ruleIds: ['csdn-rewrite-open', 'csdn-autojump'] },
+  { id: 'juejin', name: '掘金', ruleIds: ['juejin-transform', 'juejin-autojump'] },
+  { id: 'jianshu', name: '简书', ruleIds: ['jianshu-transform', 'jianshu-autojump'] },
+  { id: 'weibo', name: '微博', ruleIds: ['weibo-transform', 'weibo-autojump'] },
+  { id: 'baidu', name: '百度搜索', ruleIds: ['baidu-transform'] },
+  { id: 'bing', name: 'Bing 搜索', ruleIds: ['bing-transform'] },
+  { id: 'google', name: 'Google 搜索', ruleIds: ['google-transform', 'google-autojump'] },
+  { id: 'douban', name: '豆瓣', ruleIds: ['douban-autojump'] },
+  { id: 'wechat', name: '微信', ruleIds: ['wechat-autojump'] },
+  { id: 'wechat-community', name: '微信开放社区', ruleIds: ['wechat-community-rewrite', 'wechat-community-autojump'] },
+  { id: 'qqmail', name: 'QQ 邮箱', ruleIds: ['qqmail-rewrite', 'qqmail-autojump'] },
+  { id: 'txc', name: '腾讯兔小巢', ruleIds: ['txc-transform', 'txc-autojump'] },
+  { id: 'docsqq', name: '腾讯文档', ruleIds: ['docsqq-autojump'] },
+  { id: 'pcqq', name: 'PC 版 QQ', ruleIds: ['pcqq-autojump'] },
+  { id: 'coolapk', name: '酷安', ruleIds: ['coolapk-autojump'] },
+  { id: 'bilibili', name: '哔哩哔哩游戏', ruleIds: ['bilibili-autojump'] },
+  { id: 'gitee', name: '码云', ruleIds: ['gitee-transform', 'gitee-autojump'] },
+  { id: 'gitcode', name: 'GitCode', ruleIds: ['gitcode-rewrite', 'gitcode-autojump'] },
+  { id: 'oschina', name: '开源中国', ruleIds: ['oschina-transform', 'oschina-autojump'] },
+  { id: '51cto', name: '51CTO', ruleIds: ['51cto-rewrite'] },
+  { id: 'tcn', name: '微博短链接', ruleIds: ['tcn-autojump'] },
+  { id: 'yuque', name: '语雀', ruleIds: ['yuque-autojump'] },
+  { id: 'leetcode', name: '力扣', ruleIds: ['leetcode-transform', 'leetcode-autojump'] },
+  { id: 'nga', name: 'NGA', ruleIds: ['nga-transform'] },
+  { id: 'sspai', name: '少数派', ruleIds: ['sspai-transform', 'sspai-autojump'] },
+  { id: 'so', name: '360 搜索', ruleIds: ['so-transform'] },
+  { id: 'sogou', name: '搜狗搜索', ruleIds: ['sogou-transform'] },
+  { id: 'afdian', name: '爱发电', ruleIds: ['afdian-transform', 'afdian-autojump'] },
+  { id: 'linuxdo', name: 'LINUX DO', ruleIds: ['linuxdo-transform'] },
+  { id: 'nodeseek', name: 'NodeSeek', ruleIds: ['nodeseek-transform', 'nodeseek-autojump'] },
+  { id: 'nowcoder', name: '牛客网', ruleIds: ['nowcoder-transform', 'nowcoder-autojump'] },
+  { id: 'ld246', name: '链滴', ruleIds: ['ld246-transform', 'ld246-autojump'] },
+  { id: 'tencentcloud', name: '腾讯云社区', ruleIds: ['tencentcloud-transform', 'tencentcloud-autojump'] },
+  { id: 'infoq', name: 'InfoQ', ruleIds: ['infoq-rewrite', 'infoq-autojump'] },
+  { id: 'huaban', name: '花瓣网', ruleIds: ['huaban-autojump'] },
+  { id: 'bookmarkearth', name: '书签地球', ruleIds: ['bookmarkearth-transform', 'bookmarkearth-autojump'] },
+  { id: 'kdocs', name: '金山文档', ruleIds: ['kdocs-autojump'] },
+  { id: 'shimo', name: '石墨文档', ruleIds: ['shimo-rewrite', 'shimo-autojump'] },
+  { id: 'steam', name: 'Steam 社区', ruleIds: ['steam-autojump'] },
+  { id: 'acgbox', name: 'ACG 盒子', ruleIds: ['acgbox-transform', 'acgbox-autojump'] },
+  { id: 'pixiv', name: 'Pixiv', ruleIds: ['pixiv-transform', 'pixiv-autojump'] },
+  { id: 'facebook', name: 'Facebook', ruleIds: ['facebook-transform', 'facebook-autojump'] },
+  { id: 'twitter', name: 'Twitter / X', ruleIds: ['twitter-transform'] },
+  { id: 'youtube', name: 'YouTube', ruleIds: ['youtube-transform', 'youtube-autojump'] },
+  { id: 'instagram', name: 'Instagram', ruleIds: ['instagram-transform', 'instagram-autojump'] },
+]
+
+/** 根据分组定义和规则数组构建 RuleGroup[] */
+export function buildRuleGroups(rules: Rule[], groupDefs: RawGroupDef[]): RuleGroup[] {
+  const ruleMap = new Map(rules.map(r => [r.id, r]))
+  return groupDefs.map(def => ({
+    id: def.id,
+    name: def.name,
+    enabled: true,
+    rules: def.ruleIds
+      .map(id => ruleMap.get(id))
+      .filter((r): r is Rule => r !== undefined),
+  }))
+}
+
+/** 按组结构组织的内置规则 */
+export const builtinRuleGroups: RuleGroup[] = buildRuleGroups(builtinRules, builtinGroupDefs)
+
+/** 获取扁平的内置规则列表（用于 content script / popup 中的匹配） */
+export function getFlatBuiltinRules(): Rule[] {
+  return builtinRules
+}

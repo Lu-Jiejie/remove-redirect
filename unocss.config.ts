@@ -6,7 +6,9 @@ export default defineConfig({
   presets: [
     presetUno(),
     presetAttributify(),
-    presetIcons(),
+    presetIcons({
+      warn: true,
+    }),
     presetWebFonts({
       fonts: {
         sans: ['Outfit:400,600,800', 'Noto Sans SC:400,600,800'],

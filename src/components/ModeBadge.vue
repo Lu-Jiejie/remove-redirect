@@ -13,9 +13,9 @@ const props = withDefaults(defineProps<{
 const meta = computed(() => ruleModeMeta[props.mode])
 const text = computed(() => props.short ? meta.value.shortLabel : meta.value.label)
 const badgeClass = computed(() => ({
-  'border-[var(--rr-blue)]/30 bg-[var(--rr-blue-soft)] color-[var(--rr-blue-text)]': props.mode === 'transform',
-  'border-[var(--rr-green)]/34 bg-[var(--rr-green-soft)] color-[var(--rr-green-text)]': props.mode === 'autojump',
-  'border-[var(--rr-orange)]/34 bg-[var(--rr-orange-soft)] color-[var(--rr-orange-text)]': props.mode === 'rewrite-open',
+  'border-[var(--rr-blue-line)] bg-[var(--rr-blue-soft)] color-[var(--rr-blue-text)]': props.mode === 'transform',
+  'border-[var(--rr-green-line)] bg-[var(--rr-green-soft)] color-[var(--rr-green-text)]': props.mode === 'autojump',
+  'border-[var(--rr-orange-line)] bg-[var(--rr-orange-soft)] color-[var(--rr-orange-text)]': props.mode === 'rewrite-open',
 }))
 </script>
 

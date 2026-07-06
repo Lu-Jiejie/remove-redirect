@@ -1,36 +1,81 @@
-import type { RuleListEntry } from '~/components/types'
-import type { ExtensionSettings, Rule } from '~/types/rules'
+import type { RuleGroupEntry, RuleListEntry } from '~/components/types'
+import type { ExtensionSettings, Rule, RuleGroupMeta } from '~/types/rules'
 import { computed, ref, watch } from 'vue'
 import browser from 'webextension-polyfill'
-import { builtinRules } from '~/rules/builtin'
+import { builtinRuleGroups, getFlatBuiltinRules } from '~/rules/builtin'
 
-const STORAGE_KEY = 'remove-redirect:user-rules'
+const STORAGE_RULES = 'remove-redirect:user-rules'
+const STORAGE_GROUPS = 'remove-redirect:user-groups'
 const SETTINGS_KEY = 'remove-redirect:settings'
 
 const defaultSettings: ExtensionSettings = { enabled: true }
 
 const userRules = ref<Rule[]>([])
+const userGroupMetas = ref<RuleGroupMeta[]>([])
 const settings = ref<ExtensionSettings>({ ...defaultSettings })
 const ready = ref(false)
 
 const allRules = computed<RuleListEntry[]>(() => {
-  const builtin = builtinRules.map(rule => ({ rule, isBuiltin: true }))
+  const builtin = getFlatBuiltinRules().map(rule => ({ rule, isBuiltin: true }))
   const user = userRules.value.map(rule => ({ rule, isBuiltin: false }))
   return [...builtin, ...user]
 })
 
+/** 按组结构组织的完整规则列表 */
+const allRuleGroups = computed<RuleGroupEntry[]>(() => {
+  const builtin = builtinRuleGroups.map(group => ({ group, isBuiltin: true }))
+
+  // Build user groups from metas, pulling rules by groupId
+  const rulesByGroup = new Map<string, Rule[]>()
+  for (const rule of userRules.value) {
+    const gid = rule.groupId
+    if (!gid) continue
+    if (!rulesByGroup.has(gid)) rulesByGroup.set(gid, [])
+    rulesByGroup.get(gid)!.push(rule)
+  }
+
+  const userGroups: RuleGroupEntry[] = userGroupMetas.value.map(meta => ({
+    group: {
+      id: meta.id,
+      name: meta.name,
+      domain: meta.domain,
+      enabled: meta.enabled,
+      rules: rulesByGroup.get(meta.id) ?? [],
+    },
+    isBuiltin: false,
+  }))
+
+  // Orphan user rules (no group meta) become single-rule groups
+  const knownIds = new Set(userGroupMetas.value.map(m => m.id))
+  const orphanGroups: RuleGroupEntry[] = userRules.value
+    .filter(r => r.groupId && !knownIds.has(r.groupId))
+    .map(r => ({
+      group: { id: `orphan-${r.id}`, name: r.name, enabled: r.enabled, rules: [r] },
+      isBuiltin: false,
+    }))
+
+  return [...builtin, ...userGroups, ...orphanGroups]
+})
+
 async function loadRulesData() {
   try {
-    const stored = await browser.storage.local.get([STORAGE_KEY, SETTINGS_KEY])
+    const stored = await browser.storage.local.get([STORAGE_RULES, STORAGE_GROUPS, SETTINGS_KEY])
 
-    if (stored[STORAGE_KEY])
-      userRules.value = JSON.parse(stored[STORAGE_KEY] as string)
+    if (stored[STORAGE_GROUPS])
+      userGroupMetas.value = JSON.parse(stored[STORAGE_GROUPS] as string)
+
+    if (stored[STORAGE_RULES])
+      userRules.value = JSON.parse(stored[STORAGE_RULES] as string)
 
     if (stored[SETTINGS_KEY])
       settings.value = { ...defaultSettings, ...JSON.parse(stored[SETTINGS_KEY] as string) }
+
+    // Migration: if there are user rules with no groupId, create a group for each
+    migrateOrphanRules()
   }
   catch {
     userRules.value = []
+    userGroupMetas.value = []
     settings.value = { ...defaultSettings }
   }
   finally {
@@ -38,8 +83,29 @@ async function loadRulesData() {
   }
 }
 
+function migrateOrphanRules() {
+  const knownIds = new Set(userGroupMetas.value.map(m => m.id))
+  let changed = false
+  for (const rule of userRules.value) {
+    if (!rule.groupId) {
+      const gid = `user-${rule.id}`
+      rule.groupId = gid
+      if (!knownIds.has(gid)) {
+        userGroupMetas.value.push({ id: gid, name: rule.name, domain: rule.domain, enabled: rule.enabled })
+        knownIds.add(gid)
+      }
+      changed = true
+    }
+  }
+  // Only persist if migration happened
+}
+
 async function saveUserRules() {
-  await browser.storage.local.set({ [STORAGE_KEY]: JSON.stringify(userRules.value) })
+  await browser.storage.local.set({ [STORAGE_RULES]: JSON.stringify(userRules.value) })
+}
+
+async function saveUserGroups() {
+  await browser.storage.local.set({ [STORAGE_GROUPS]: JSON.stringify(userGroupMetas.value) })
 }
 
 async function saveSettings() {
@@ -62,20 +128,40 @@ function removeRule(id: string) {
 
 function toggleRule(id: string) {
   const rule = userRules.value.find(item => item.id === id)
-  if (!rule)
-    return
-
+  if (!rule) return
   updateRule(id, { enabled: !rule.enabled })
 }
 
+/** Create a new user rule group and select it */
+function createUserGroup(name: string, domain: string): string {
+  const id = `user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+  userGroupMetas.value = [...userGroupMetas.value, { id, name, domain, enabled: true }]
+  return id
+}
+
+/** Update user group metadata */
+function updateUserGroup(id: string, updates: Partial<RuleGroupMeta>) {
+  userGroupMetas.value = userGroupMetas.value.map(g =>
+    g.id === id ? { ...g, ...updates } : g,
+  )
+}
+
+/** Delete a user rule group and all its rules */
+function deleteUserGroup(id: string) {
+  userGroupMetas.value = userGroupMetas.value.filter(g => g.id !== id)
+  userRules.value = userRules.value.filter(r => r.groupId !== id)
+}
+
 watch(userRules, () => {
-  if (ready.value)
-    saveUserRules()
+  if (ready.value) saveUserRules()
+}, { deep: true })
+
+watch(userGroupMetas, () => {
+  if (ready.value) saveUserGroups()
 }, { deep: true })
 
 watch(settings, () => {
-  if (ready.value)
-    saveSettings()
+  if (ready.value) saveSettings()
 }, { deep: true })
 
 export function useRules() {
@@ -83,11 +169,16 @@ export function useRules() {
     ready,
     settings,
     userRules,
+    userGroupMetas,
     allRules,
+    allRuleGroups,
     loadRulesData,
     addRule,
     updateRule,
     removeRule,
     toggleRule,
+    createUserGroup,
+    updateUserGroup,
+    deleteUserGroup,
   }
 }

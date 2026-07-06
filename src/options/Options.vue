@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import type { RuleListEntry, RuleStats } from '~/components/types'
+import type { RuleGroupEntry, RuleStats } from '~/components/types'
 import type { Rule, RuleFormModel, RuleMode } from '~/types/rules'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import GroupForm from '~/components/GroupForm.vue'
 import RuleDetail from '~/components/RuleDetail.vue'
 import RuleForm from '~/components/RuleForm.vue'
 import RuleSidebar from '~/components/RuleSidebar.vue'
@@ -12,14 +13,24 @@ const {
   ready,
   settings,
   userRules,
+  userGroupMetas,
   allRules,
+  allRuleGroups,
   loadRulesData,
   addRule,
+  updateRule,
   removeRule,
+  toggleRule,
+  createUserGroup,
+  updateUserGroup,
+  deleteUserGroup,
 } = useRules()
 
-const selectedId = shallowRef<string | null>(null)
-const showAddForm = shallowRef(false)
+const selectedGroupId = shallowRef<string | null>(null)
+const showGroupForm = shallowRef(false)
+const showRuleForm = shallowRef(false)
+const editingRuleId = shallowRef<string | null>(null)
+const addingToGroupId = shallowRef<string | null>(null)
 const searchQuery = shallowRef('')
 const form = ref<RuleFormModel>(createEmptyForm())
 
@@ -31,48 +42,68 @@ const globalEnabled = computed({
 })
 
 const stats = computed<RuleStats>(() => {
-  const entries = allRules.value
+  const groups = allRuleGroups.value
+  const totalRules = allRules.value.length
+  const enabledRules = allRules.value.filter(({ rule }) => rule.enabled).length
   return {
-    total: entries.length,
-    enabled: entries.filter(({ rule }) => rule.enabled).length,
-    builtin: entries.filter(({ isBuiltin }) => isBuiltin).length,
+    total: totalRules,
+    enabled: enabledRules,
+    builtin: groups.filter(g => g.isBuiltin).length,
     user: userRules.value.length,
   }
 })
 
-const filteredEntries = computed<RuleListEntry[]>(() => {
+const filteredGroups = computed<RuleGroupEntry[]>(() => {
   const query = searchQuery.value.trim().toLowerCase()
   if (!query)
-    return allRules.value
+    return allRuleGroups.value
 
-  return allRules.value.filter(({ rule }) =>
-    rule.name.toLowerCase().includes(query)
-    || rule.domain.toLowerCase().includes(query),
+  return allRuleGroups.value.filter(({ group }) =>
+    group.name.toLowerCase().includes(query)
+    || group.rules.some(r =>
+      r.name.toLowerCase().includes(query)
+      || r.domain.toLowerCase().includes(query),
+    ),
   )
 })
 
-const selectedEntry = computed<RuleListEntry | null>(() => {
-  if (!selectedId.value)
+const selectedGroup = computed<RuleGroupEntry | null>(() => {
+  if (!selectedGroupId.value)
     return null
-  return allRules.value.find(({ rule }) => rule.id === selectedId.value) ?? null
+  return allRuleGroups.value.find(g => g.group.id === selectedGroupId.value) ?? null
+})
+
+const isBuiltinGroupSelected = computed(() => {
+  const g = selectedGroup.value
+  return g !== null && g.isBuiltin
 })
 
 function createEmptyForm(): RuleFormModel {
   return {
-    name: '',
-    domain: '',
-    isRegex: false,
-    mode: 'transform',
-    enabled: true,
-    paramKey: '',
-    paramKeys: '',
-    separator: '',
-    attribute: '',
-    selector: '',
-    fallbackSelector: '',
-    clickSelector: '',
-    pathPattern: '',
+    name: '', domain: '', isRegex: false, mode: 'transform', enabled: true,
+    paramKey: '', paramKeys: '', separator: '', attribute: '',
+    selector: '', fallbackSelector: '',
+    clickSelector: '', pathPattern: '',
     matchString: '',
+  }
+}
+
+function ruleToForm(rule: Rule): RuleFormModel {
+  return {
+    name: rule.name,
+    domain: rule.domain,
+    isRegex: rule.isRegex,
+    mode: rule.mode,
+    enabled: rule.enabled,
+    paramKey: rule.transform?.paramKey || rule.autojump?.paramKey || rule.rewriteOpen?.paramKey || '',
+    paramKeys: rule.transform?.paramKeys?.join(', ') || rule.autojump?.paramKeys?.join(', ') || rule.rewriteOpen?.paramKeys?.join(', ') || '',
+    separator: rule.transform?.separator || rule.autojump?.separator || rule.rewriteOpen?.separator || '',
+    attribute: rule.transform?.attribute || '',
+    selector: rule.transform?.selector || '',
+    fallbackSelector: rule.transform?.fallbackSelector || '',
+    clickSelector: rule.autojump?.clickSelector || '',
+    pathPattern: rule.autojump?.pathPattern || '',
+    matchString: rule.rewriteOpen?.matchString || '',
   }
 }
 
@@ -85,94 +116,126 @@ function optionalValue(value: string) {
   return value.trim() || undefined
 }
 
-function formToRule(): Rule {
-  const model = form.value
-  const id = generateId()
+function formToRuleBase(model: RuleFormModel) {
   const paramKeys = parseParamKeys(model.paramKeys)
   const paramKey = optionalValue(model.paramKey)
   const separator = optionalValue(model.separator)
-  const base = {
-    id,
+  return {
     name: model.name.trim() || model.domain.trim(),
     domain: model.domain.trim(),
     isRegex: model.isRegex,
     enabled: model.enabled,
     mode: model.mode as RuleMode,
-  }
-
-  if (model.mode === 'transform') {
-    return {
-      ...base,
-      transform: {
-        selector: model.selector.trim(),
-        paramKey,
-        paramKeys,
-        separator,
-        attribute: optionalValue(model.attribute),
-        fallbackSelector: optionalValue(model.fallbackSelector),
-      },
-    }
-  }
-
-  if (model.mode === 'autojump') {
-    return {
-      ...base,
-      autojump: {
-        paramKey,
-        paramKeys,
-        separator,
-        clickSelector: optionalValue(model.clickSelector),
-        pathPattern: optionalValue(model.pathPattern),
-      },
-    }
-  }
-
-  return {
-    ...base,
-    rewriteOpen: {
-      matchString: model.matchString.trim(),
-      paramKey,
-      paramKeys,
-      separator,
-    },
+    paramKey, paramKeys, separator,
   }
 }
 
-function startAdd() {
+function formToRule(): Rule {
+  const base = formToRuleBase(form.value)
+  const id = generateId()
+  if (base.mode === 'transform') {
+    return { id, ...base, transform: { selector: form.value.selector.trim(), paramKey: base.paramKey, paramKeys: base.paramKeys, separator: base.separator, attribute: optionalValue(form.value.attribute), fallbackSelector: optionalValue(form.value.fallbackSelector) } }
+  }
+  if (base.mode === 'autojump') {
+    return { id, ...base, autojump: { paramKey: base.paramKey, paramKeys: base.paramKeys, separator: base.separator, clickSelector: optionalValue(form.value.clickSelector), pathPattern: optionalValue(form.value.pathPattern) } }
+  }
+  return { id, ...base, rewriteOpen: { matchString: form.value.matchString.trim(), paramKey: base.paramKey, paramKeys: base.paramKeys, separator: base.separator } }
+}
+
+// ---- Group actions ----
+
+function startCreateGroup() {
+  showGroupForm.value = true; showRuleForm.value = false; selectedGroupId.value = null
+}
+
+function saveGroup(name: string, domain: string) {
+  const gid = createUserGroup(name, domain)
+  selectedGroupId.value = gid; showGroupForm.value = false
+}
+
+function forkBuiltinGroup(groupId: string) {
+  const groupEntry = allRuleGroups.value.find(g => g.group.id === groupId)
+  if (!groupEntry || !groupEntry.isBuiltin) return
+  const { group } = groupEntry
+  const domain = group.rules[0]?.domain || ''
+  const gid = createUserGroup(group.name, domain)
+  for (const rule of group.rules) {
+    addRule({ ...rule, id: generateId(), groupId: gid })
+  }
+  selectedGroupId.value = gid
+}
+
+function deleteSelectedGroup() {
+  if (!selectedGroupId.value || isBuiltinGroupSelected.value) return
+  if (!confirm('确定删除此规则组及其所有规则？')) return
+  deleteUserGroup(selectedGroupId.value)
+  selectedGroupId.value = null
+}
+
+// ---- Rule actions ----
+
+function startAddRule() {
+  if (!selectedGroupId.value) return
   form.value = createEmptyForm()
-  selectedId.value = null
-  showAddForm.value = true
+  editingRuleId.value = null
+  addingToGroupId.value = selectedGroupId.value
+  showRuleForm.value = true
 }
 
-function selectRule(id: string) {
-  selectedId.value = id
-  showAddForm.value = false
+function startEditRule(ruleId: string) {
+  const rule = userRules.value.find(r => r.id === ruleId)
+  if (!rule) return
+  form.value = ruleToForm(rule)
+  editingRuleId.value = ruleId
+  addingToGroupId.value = rule.groupId ?? null
+  showRuleForm.value = true
 }
 
 function cancelForm() {
-  showAddForm.value = false
+  showGroupForm.value = false; showRuleForm.value = false
+  editingRuleId.value = null; addingToGroupId.value = null
 }
 
 function saveRule() {
-  const rule = formToRule()
-  addRule(rule)
-  selectedId.value = rule.id
-  showAddForm.value = false
+  if (editingRuleId.value) {
+    const model = form.value
+    const base = formToRuleBase(model)
+    const id = editingRuleId.value
+    let update: Partial<Rule>
+    if (base.mode === 'transform') {
+      update = { ...base, transform: { selector: model.selector.trim(), paramKey: base.paramKey, paramKeys: base.paramKeys, separator: base.separator, attribute: optionalValue(model.attribute), fallbackSelector: optionalValue(model.fallbackSelector) } }
+    } else if (base.mode === 'autojump') {
+      update = { ...base, autojump: { paramKey: base.paramKey, paramKeys: base.paramKeys, separator: base.separator, clickSelector: optionalValue(model.clickSelector), pathPattern: optionalValue(model.pathPattern) } }
+    } else {
+      update = { ...base, rewriteOpen: { matchString: model.matchString.trim(), paramKey: base.paramKey, paramKeys: base.paramKeys, separator: base.separator } }
+    }
+    updateRule(id, update)
+    editingRuleId.value = null
+  } else {
+    addRule({ ...formToRule(), groupId: addingToGroupId.value ?? undefined })
+  }
+  showRuleForm.value = false; addingToGroupId.value = null
 }
 
 function deleteRule(id: string) {
-  // eslint-disable-next-line no-alert
-  if (!confirm('确定删除此规则？'))
-    return
-
+  if (!confirm('确定删除此规则？')) return
   removeRule(id)
-  if (selectedId.value === id)
-    selectedId.value = null
 }
 
-watch(allRules, (entries) => {
-  if (selectedId.value && !entries.some(({ rule }) => rule.id === selectedId.value))
-    selectedId.value = null
+function onToggleRule(ruleId: string, enabled: boolean) {
+  updateRule(ruleId, { enabled })
+}
+
+function onUpdateGroupName(id: string, name: string) { updateUserGroup(id, { name }) }
+function onUpdateGroupDomain(id: string, domain: string) { updateUserGroup(id, { domain }) }
+
+function selectGroup(id: string) {
+  selectedGroupId.value = id; showGroupForm.value = false; showRuleForm.value = false
+}
+
+watch(allRuleGroups, (groups) => {
+  if (selectedGroupId.value && !groups.some(g => g.group.id === selectedGroupId.value))
+    selectedGroupId.value = null
 })
 
 onMounted(loadRulesData)
@@ -183,30 +246,32 @@ onMounted(loadRulesData)
     <RuleSidebar
       v-model:enabled="globalEnabled"
       v-model:search="searchQuery"
-      :active-id="selectedId"
-      :entries="filteredEntries"
+      :active-group-id="selectedGroupId"
+      :groups="filteredGroups"
       :stats="stats"
-      @add="startAdd"
-      @select="selectRule"
+      @add="startCreateGroup"
+      @select="selectGroup"
     />
 
     <section class="min-w-0 flex-1 overflow-y-auto p-32px max-md:p-18px" style="scrollbar-gutter: stable">
-      <div v-if="!ready" class="grid min-h-420px place-items-center color-[var(--rr-muted)] text-14px">
-        加载中...
-      </div>
+      <div v-if="!ready" class="grid min-h-420px place-items-center color-[var(--rr-muted)] text-14px">加载中...</div>
 
-      <RuleForm
-        v-else-if="showAddForm"
-        v-model="form"
-        @cancel="cancelForm"
-        @save="saveRule"
-      />
+      <GroupForm v-else-if="showGroupForm" :existing-groups="userGroupMetas" @cancel="cancelForm" @save="saveGroup" />
+
+      <RuleForm v-else-if="showRuleForm" v-model="form" :is-editing="editingRuleId !== null" @cancel="cancelForm" @save="saveRule" />
 
       <RuleDetail
         v-else
-        :entry="selectedEntry"
-        @add="startAdd"
+        :entry="selectedGroup"
+        :is-builtin="isBuiltinGroupSelected"
+        @add="startAddRule"
+        @edit="startEditRule"
         @delete="deleteRule"
+        @toggle="onToggleRule"
+        @delete-group="deleteSelectedGroup"
+        @fork="forkBuiltinGroup"
+        @update-group-name="onUpdateGroupName"
+        @update-group-domain="onUpdateGroupDomain"
       />
     </section>
   </main>
